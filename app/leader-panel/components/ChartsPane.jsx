@@ -77,9 +77,6 @@ export default function ChartsPanel({ data }) {
     ]
   };
 
-  // ----------- Gráficas existentes -------------
-  // const escuelas = [...new Set(data.map(d => d["Escuela"] || "Sin Escuela"))];
-
   // Polar Area: Modalidad por cantidad de programas
   const modalidades = [...new Set(data.map(d => d["Modalidad"] || "Sin Modalidad"))];
   const polarData = {
@@ -218,7 +215,7 @@ export default function ChartsPanel({ data }) {
     }]
   };
 
-  // --- Estilos (solo charts/menu tabs), coherente y sobrio ---
+  // --- Estilos ---
   const cardStyle = "bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl";
   const titleStyle = "text-white text-base sm:text-lg font-bold mb-3";
   const containerStyle = "grid grid-cols-1 md:grid-cols-2 gap-6";
