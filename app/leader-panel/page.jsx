@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
-import ChartsPanel from './components/ChartsPanel';
+import ChartsPanel from './components/ChartsPane';
 
 // -------------------
 // Toast (alerta visual)
@@ -68,14 +68,14 @@ export default function LeaderPanel() {
   const [form, setForm] = useState({ ...initialForm });
   const [tareas, setTareas] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef(null);
 
-  const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [editData, setEditData] = useState<any>({});
+  const [editIndex, setEditIndex] = useState(null);
+  const [editData, setEditData] = useState({});
   const [showForm, setShowForm] = useState(false);
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
-  const toastTimeout = useRef<any>(null);
+  const toastTimeout = useRef(null);
 
   const [filtroPrograma, setFiltroPrograma] = useState('');
   const [filtroEscuela, setFiltroEscuela] = useState('');
@@ -87,13 +87,13 @@ export default function LeaderPanel() {
     toastTimeout.current = setTimeout(() => setToast({ show: false, message: '', type }), 2500);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
     };
@@ -101,7 +101,7 @@ export default function LeaderPanel() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const isFormValid = (data: any) => {
+  const isFormValid = (data) => {
     return (
       data['Escuela'].trim() !== '' &&
       data['Nombre del Programa'].trim() !== '' &&
@@ -109,7 +109,7 @@ export default function LeaderPanel() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid(form)) {
       const errorAudio = new Audio('/eliminar.wav');
@@ -139,7 +139,7 @@ export default function LeaderPanel() {
     setTareas(data);
   };
 
-  const handleDelete = async (index: number) => {
+  const handleDelete = async (index) => {
     const res = await fetch('/api/tareas', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -150,18 +150,18 @@ export default function LeaderPanel() {
     fetchTareas();
   };
 
-  const handleEdit = (index: number) => {
+  const handleEdit = (index) => {
     if (tareas[index]) {
       setEditIndex(index);
       setEditData({ ...tareas[index] });
     }
   };
 
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleEditChange = (e) => {
     setEditData({ ...editData, [e.target.name]: e.target.value });
   };
 
-  const handleEditSave = async (index: number) => {
+  const handleEditSave = async (index) => {
     if (!isFormValid(editData)) {
       showToast('Por favor, completa los campos requeridos.', 'error');
       return;
@@ -372,7 +372,7 @@ export default function LeaderPanel() {
               </tr>
             </thead>
             <tbody>
-            {tareasFiltradas.map((tarea: any, i: number) => {
+            {tareasFiltradas.map((tarea, i) => {
               const realIndex = tareas.findIndex(
                 t => JSON.stringify(t) === JSON.stringify(tarea)
               );

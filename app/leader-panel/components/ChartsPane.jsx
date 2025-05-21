@@ -46,7 +46,7 @@ export default function ChartsPanel({ data }) {
   const [interpolation, setInterpolation] = useState("monotone");
 
   // --------- NUEVA Gráfica de línea (Line Styling) ---------
-  // Promedio de asignaturas por semestre (puedes cambiarlo por "por escuela" si prefieres)
+  // Promedio de asignaturas por semestre
   const semestres = Array.from(new Set(data.map(d => Number(d["Semestre"])).filter(Boolean))).sort((a, b) => a - b);
   const avgAsignaturasPorSemestre = semestres.map(s => {
     const filtered = data.filter(d => Number(d["Semestre"]) === s);
@@ -78,7 +78,7 @@ export default function ChartsPanel({ data }) {
   };
 
   // ----------- Gráficas existentes -------------
-  const escuelas = [...new Set(data.map(d => d["Escuela"] || "Sin Escuela"))];
+  // const escuelas = [...new Set(data.map(d => d["Escuela"] || "Sin Escuela"))];
 
   // Polar Area: Modalidad por cantidad de programas
   const modalidades = [...new Set(data.map(d => d["Modalidad"] || "Sin Modalidad"))];
