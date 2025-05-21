@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const { index } = await req.json();
-  let data = readData();
+  const data = readData();
 
   if (typeof index !== 'number' || index < 0 || index >= data.length) {
     return NextResponse.json({ success: false, message: 'Índice inválido.' }, { status: 400 });
@@ -76,7 +76,7 @@ export async function DELETE(req: Request) {
 
 export async function PUT(req: Request) {
   const { index, updatedData } = await req.json();
-  let data = readData();
+  const data = readData();
 
   if (typeof index !== 'number' || index < 0 || index >= data.length) {
     return NextResponse.json({ success: false, message: 'Índice inválido.' }, { status: 400 });
