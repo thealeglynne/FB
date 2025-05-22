@@ -26,7 +26,7 @@ export function middleware(request) {
         }
 
         return NextResponse.next();
-      } catch (e) {
+      } catch  {
         return NextResponse.redirect(new URL('/login', request.url));
       }
     }
