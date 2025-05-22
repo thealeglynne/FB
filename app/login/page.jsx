@@ -1,12 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import './LoginPage.css';
 
-export default function LoginPage() {
+
+export default function LoginModal() {
+  const [isOpen, setIsOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,22 +45,36 @@ export default function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-xs">
-      <input
-        className="border p-2"
-        value={username}
-        onChange={e => setUsername(e.target.value)}
-        placeholder="Usuario"
-      />
-      <input
-        className="border p-2"
-        type="password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        placeholder="Contraseña"
-      />
-      <button className="bg-blue-500 text-white py-2" type="submit">Iniciar sesión</button>
-      {error && <p className="text-red-500">{error}</p>}
-    </form>
+    <>
+      <button onClick={() => setIsOpen(true)} className="btn-glow login-open-button">
+        Iniciar sesión
+      </button>
+
+      {isOpen && (
+        <div className="login-modal-overlay" onClick={() => setIsOpen(false)}>
+          <div className="login-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="login-close-button" onClick={() => setIsOpen(false)}>✕</button>
+            <h2 className="login-title">Iniciar sesión</h2>
+            <form onSubmit={handleSubmit} className="login-form">
+              <input
+                className="login-input"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="Usuario"
+              />
+              <input
+                className="login-input"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Contraseña"
+              />
+              <button className="login-button" type="submit">Entrar</button>
+              {error && <p className="login-error">{error}</p>}
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

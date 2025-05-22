@@ -1,92 +1,168 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
-const filePath = path.join(process.cwd(), 'data', 'tareas.json');
+const BIN_ID = '682f27e08960c979a59f5afe';
+const API_KEY_MASTER = '$2a$10$AFjAT/OLBCOFkqO83WSIbO9w31.wq.9YRPvSPZoz4xizM66bT3t6S'; // X-Master-Key
+const API_KEY_ACCESS = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e'; // X-Access-Key
 
-function readData() {
+const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+// Campos permitidos
+const allowedFields = [
+  "Escuela",
+  "Nombre del Programa",
+  "Nivel de Estudios",
+  "Trámite",
+  "Modalidad",
+  "Fecha de Radicación",
+  "Fecha de Visita de padres",
+  "Semestre",
+  "# Asignaturas",
+  "Entrega del plan de estudios a Fábrica de contenidos",
+  "Entrega del plan de Virtualización",
+  "Entrega Contenidos",
+  "1ra Entrega Virtualización",
+  "Estado 1ra entrega",
+  "Revisión Check List",
+  "Entrega Ajustes",
+  "Ejecución Ajustes",
+  "Ajustes Asesor",
+  "Entrega Final Ajustes",
+  "Estado Fabrica"
+];
+
+// Obtener datos - GET
+async function fetchData() {
   try {
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data);
-  } catch {
+    const res = await fetch(API_URL, {
+      headers: {
+        'X-Access-Key': API_KEY_ACCESS,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!res.ok) throw new Error(`Error al obtener datos: ${res.status}`);
+    const json = await res.json();
+    return Array.isArray(json.record) ? json.record : [];
+  } catch (error) {
+    console.error('Error fetching data:', error);
     return [];
   }
 }
 
-function writeData(data) {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+// Actualizar datos - PUT
+async function updateData(newData) {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY_MASTER
+      },
+      body: JSON.stringify(newData)
+    });
+    if (!res.ok) throw new Error(`Error al actualizar datos: ${res.status}`);
+    return await res.json();
+  } catch (error) {
+    console.error('Error updating data:', error);
+    throw error;
+  }
 }
 
-const allowedFields = [
-  'Escuela',
-  'Nombre del Programa',
-  'Nivel de Estudios',
-  'Trámite',
-  'Modalidad',
-  'Fecha de Radicación',
-  'Fecha de Visita de padres',
-  'Semestre',
-  '# Asignaturas',
-  'Entrega del plan de estudios a Fábrica de contenidos',
-  'Entrega del plan de Virtualización',
-  'Entrega Contenidos',
-  '1ra Entrega Virtualización',
-  'Estado 1ra entrega',
-  'Revisión Check List',
-  'Entrega Ajustes',
-  'Ejecución Ajustes',
-  'Ajustes Asesor',
-  'Entrega Final Ajustes',
-  'Estado Fabrica'
-];
-
+// GET - Obtener todos los registros
 export async function GET() {
-  const data = readData();
-  return NextResponse.json(data);
+  try {
+    const data = await fetchData();
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Error al obtener los datos' },
+      { status: 500 }
+    );
+  }
 }
 
+// POST - Añadir nuevo registro
 export async function POST(req) {
-  const newEntry = await req.json();
-  const data = readData();
+  try {
+    const newEntry = await req.json();
+    const data = await fetchData();
 
-  const filteredEntry = {};
-  for (const field of allowedFields) {
-    filteredEntry[field] = newEntry[field] || '';
+    const filteredEntry = {};
+    allowedFields.forEach(field => {
+      filteredEntry[field] = newEntry[field] || '';
+    });
+
+    data.push(filteredEntry);
+    await updateData(data);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Registro agregado correctamente'
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Error al agregar el registro' },
+      { status: 500 }
+    );
   }
-
-  data.push(filteredEntry);
-  writeData(data);
-
-  return NextResponse.json({ success: true, message: 'Registro agregado correctamente' });
 }
 
+// DELETE - Eliminar registro por índice
 export async function DELETE(req) {
-  const { index } = await req.json();
-  const data = readData();
+  try {
+    const { index } = await req.json();
+    const data = await fetchData();
 
-  if (typeof index !== 'number' || index < 0 || index >= data.length) {
-    return NextResponse.json({ success: false, message: 'Índice inválido.' }, { status: 400 });
+    if (typeof index !== 'number' || index < 0 || index >= data.length) {
+      return NextResponse.json(
+        { success: false, message: 'Índice inválido' },
+        { status: 400 }
+      );
+    }
+
+    data.splice(index, 1);
+    await updateData(data);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Registro eliminado correctamente'
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Error al eliminar el registro' },
+      { status: 500 }
+    );
   }
-
-  data.splice(index, 1);
-  writeData(data);
-
-  return NextResponse.json({ success: true, message: 'Registro eliminado correctamente' });
 }
 
+// PUT - Actualizar registro por índice
 export async function PUT(req) {
-  const { index, updatedData } = await req.json();
-  const data = readData();
+  try {
+    const { index, updatedData } = await req.json();
+    const data = await fetchData();
 
-  if (typeof index !== 'number' || index < 0 || index >= data.length) {
-    return NextResponse.json({ success: false, message: 'Índice inválido.' }, { status: 400 });
+    if (typeof index !== 'number' || index < 0 || index >= data.length) {
+      return NextResponse.json(
+        { success: false, message: 'Índice inválido' },
+        { status: 400 }
+      );
+    }
+
+    allowedFields.forEach(field => {
+      if (updatedData.hasOwnProperty(field)) {
+        data[index][field] = updatedData[field] || '';
+      }
+    });
+
+    await updateData(data);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Registro actualizado correctamente'
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, message: 'Error al actualizar el registro' },
+      { status: 500 }
+    );
   }
-
-  for (const field of allowedFields) {
-    data[index][field] = updatedData[field] || '';
-  }
-
-  writeData(data);
-
-  return NextResponse.json({ success: true, message: 'Registro editado correctamente' });
 }

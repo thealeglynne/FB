@@ -9,7 +9,7 @@ export default function GerenciaPage() {
       const confirmed = window.confirm('¿Deseas cerrar sesión y salir del panel de gerencia?');
       if (confirmed) {
         document.cookie = 'token=; Max-Age=0; path=/'; // elimina el token
-        window.location.href = '/login'; // redirige manualmente
+        window.location.href = '/'; // redirige manualmente
       } else {
         history.pushState(null, '', location.href); // evita retroceso
       }
@@ -27,7 +27,7 @@ export default function GerenciaPage() {
     const confirmLogout = window.confirm('¿Estás seguro que deseas cerrar sesión?');
     if (confirmLogout) {
       document.cookie = 'token=; Max-Age=0; path=/'; // elimina token
-      window.location.href = '/login'; // redirige
+      window.location.href = '/'; // redirige
     }
   };
 

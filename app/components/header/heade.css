@@ -1,0 +1,97 @@
+/* Estilos generales del header */
+.header {
+    width: 100%;
+    background-color: #000000; /* fondo negro */
+    padding: 1rem 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  /* Contenedor del header */
+  .header-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Logo */
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-img {
+    height: 80px;
+    width: auto;
+  }
+  
+  @media (max-width: 640px) {
+    .logo-img {
+      height: 32px;
+    }
+  }
+  
+  /* Botón con efecto glow */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+    background-color: #111;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid #333;
+    transition: all 0.3s ease-in-out;
+    width: 150px;
+    cursor: pointer;
+  }
+  
+  @media (min-width: 640px) {
+    .btn-glow {
+      padding: 0.5rem 1.5rem;
+      width: 200px;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .btn-glow {
+      width: 250px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .btn-glow {
+      width: 180px;
+    }
+  }
+  
+  .btn-glow:hover {
+    background-color: #222;
+    transform: scale(1.02);
+  }
+  
+  .btn-glow::after {
+    content: "";
+    position: absolute;
+    left: -75%;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.16) 50%,
+      transparent 60%
+    );
+    transform: skewX(-20deg);
+    transition: left 0.6s;
+    pointer-events: none;
+  }
+  
+  .btn-glow:hover::after {
+    left: 120%;
+  }
+  
