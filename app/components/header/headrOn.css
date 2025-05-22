@@ -2,21 +2,23 @@
 .header {
     width: 100%;
     
-    background-color: #000000; /* fondo negro */
-    padding: 1rem 1.5rem;
-    position: sticky;
-    top: 0;
+    background-color:  transparent; /* fondo negro */
+ 
+    position: relative;
+    top: -100;
     z-index: 1000;
   }
   
   /* Contenedor del header */
   .header-container {
     max-width: 1280px;
-    height: 80px;
+  
     margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
+    top: -30px;
   }
   
   /* Logo */
