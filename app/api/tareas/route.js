@@ -6,31 +6,14 @@ const API_KEY_ACCESS = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjA
 
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
-// Campos permitidos
 const allowedFields = [
-  "Escuela",
-  "Nombre del Programa",
-  "Nivel de Estudios",
-  "Trámite",
-  "Modalidad",
-  "Fecha de Radicación",
-  "Fecha de Visita de padres",
-  "Semestre",
-  "# Asignaturas",
-  "Entrega del plan de estudios a Fábrica de contenidos",
-  "Entrega del plan de Virtualización",
-  "Entrega Contenidos",
-  "1ra Entrega Virtualización",
-  "Estado 1ra entrega",
-  "Revisión Check List",
-  "Entrega Ajustes",
-  "Ejecución Ajustes",
-  "Ajustes Asesor",
-  "Entrega Final Ajustes",
-  "Estado Fabrica"
+  "Escuela", "Nombre del Programa", "Nivel de Estudios", "Trámite", "Modalidad",
+  "Fecha de Radicación", "Fecha de Visita de padres", "Semestre", "# Asignaturas",
+  "Entrega del plan de estudios a Fábrica de contenidos", "Entrega del plan de Virtualización",
+  "Entrega Contenidos", "1ra Entrega Virtualización", "Estado 1ra entrega", "Revisión Check List",
+  "Entrega Ajustes", "Ejecución Ajustes", "Ajustes Asesor", "Entrega Final Ajustes", "Estado Fabrica"
 ];
 
-// Obtener datos - GET
 async function fetchData() {
   try {
     const res = await fetch(API_URL, {
@@ -42,13 +25,11 @@ async function fetchData() {
     if (!res.ok) throw new Error(`Error al obtener datos: ${res.status}`);
     const json = await res.json();
     return Array.isArray(json.record) ? json.record : [];
-  } catch (error) {
-    console.error('Error fetching data:', error);
+  } catch {
     return [];
   }
 }
 
-// Actualizar datos - PUT
 async function updateData(newData) {
   try {
     const res = await fetch(API_URL, {
@@ -61,18 +42,16 @@ async function updateData(newData) {
     });
     if (!res.ok) throw new Error(`Error al actualizar datos: ${res.status}`);
     return await res.json();
-  } catch (error) {
-    console.error('Error updating data:', error);
-    throw error;
+  } catch {
+    throw new Error('Error actualizando los datos');
   }
 }
 
-// GET - Obtener todos los registros
 export async function GET() {
   try {
     const data = await fetchData();
     return NextResponse.json(data);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: 'Error al obtener los datos' },
       { status: 500 }
@@ -80,7 +59,6 @@ export async function GET() {
   }
 }
 
-// POST - Añadir nuevo registro
 export async function POST(req) {
   try {
     const newEntry = await req.json();
@@ -98,7 +76,7 @@ export async function POST(req) {
       success: true,
       message: 'Registro agregado correctamente'
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: 'Error al agregar el registro' },
       { status: 500 }
@@ -106,7 +84,6 @@ export async function POST(req) {
   }
 }
 
-// DELETE - Eliminar registro por índice
 export async function DELETE(req) {
   try {
     const { index } = await req.json();
@@ -126,7 +103,7 @@ export async function DELETE(req) {
       success: true,
       message: 'Registro eliminado correctamente'
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: 'Error al eliminar el registro' },
       { status: 500 }
@@ -134,7 +111,6 @@ export async function DELETE(req) {
   }
 }
 
-// PUT - Actualizar registro por índice
 export async function PUT(req) {
   try {
     const { index, updatedData } = await req.json();
@@ -159,7 +135,7 @@ export async function PUT(req) {
       success: true,
       message: 'Registro actualizado correctamente'
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, message: 'Error al actualizar el registro' },
       { status: 500 }
