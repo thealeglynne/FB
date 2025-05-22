@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import Leader from '../leader-panel/page';
+import LiderPanel from '../lider/page'
 
 export default function GerenciaPage() {
   // 🚫 Protege contra salida con botón "atrás"
@@ -45,6 +46,7 @@ export default function GerenciaPage() {
 
       <div>
         <Leader />
+        <LiderPanel />
       </div>
     </div>
   );
