@@ -18,6 +18,7 @@ export function middleware(request) {
       if (!token) return NextResponse.redirect(new URL('/login', request.url));
 
       try {
+        console.log('JWT_SECRET en middleware:', process.env.JWT_SECRET);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const role = PROTECTED_ROUTES[route];
 
@@ -26,7 +27,7 @@ export function middleware(request) {
         }
 
         return NextResponse.next();
-      } catch  {
+      } catch {
         return NextResponse.redirect(new URL('/login', request.url));
       }
     }
