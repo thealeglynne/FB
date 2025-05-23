@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import Leader from '../leader-panel/page';
-import LiderPanel from '../lider/lidFornt'
+import LiderPanelinfo from '../components/vistaPaneelLiderGerencia/infoDistribucionTareasPorEquipos.jsx'
 import HaderOn from '../components/header/headerON'
 
 export default function GerenciaPage() {
@@ -33,7 +33,7 @@ export default function GerenciaPage() {
       <div>
         <HaderOn />
         <Leader />
-        <LiderPanel />
+        <LiderPanelinfo />
       </div>
     </div>
   );
