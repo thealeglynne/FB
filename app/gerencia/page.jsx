@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import Leader from '../leader-panel/page';
 import LiderPanelinfo from '../components/vistaPaneelLiderGerencia/infoDistribucionTareasPorEquipos';
 import HaderOn from '../components/header/headerON';
+import MainG from '../components/mainGerente/Main'
 
 export default function GerenciaPage() {
   // 🚫 Protección para evitar salir con botón "atrás"
@@ -28,6 +29,7 @@ export default function GerenciaPage() {
     <div className="p-8 space-y-6">
       <div>
         <HaderOn />
+        <MainG />
         <Leader />
         <LiderPanelinfo />
       </div>
