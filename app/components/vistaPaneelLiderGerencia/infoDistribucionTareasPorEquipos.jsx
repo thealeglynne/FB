@@ -36,9 +36,9 @@ export default function SistemaGestionTareas() {
   const [cursos, setCursos] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState(datos.equipos[0] || '');
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState('');  // Inicial vacío para seleccionar
+  const [cursoSeleccionado, setCursoSeleccionado] = useState('');
 
-  // Función para cargar datos y asignar cursos sin equipo
   const cargarDatos = useCallback(async () => {
     setCargando(true);
     try {
@@ -54,7 +54,7 @@ export default function SistemaGestionTareas() {
       const dataTareas = await resTareas.json();
       const tareasData = Array.isArray(dataTareas.record) ? dataTareas.record : [];
 
-      // Asignar equipos a cursos sin asignar
+      // Asignar equipos a cursos sin asignar (como antes)
       let cursosActualizados = [...cursosData];
       const cursosSinAsignar = cursosData.filter(c => !c.asignado_a);
       if (cursosSinAsignar.length > 0) {
@@ -94,19 +94,24 @@ export default function SistemaGestionTareas() {
     }
   }, []);
 
-  // Carga inicial y refresco automático cada 5 minutos (300000 ms)
   useEffect(() => {
     cargarDatos();
     const intervalo = setInterval(() => {
       cargarDatos();
     }, 300000);
-
     return () => clearInterval(intervalo);
   }, [cargarDatos]);
 
-  // Filtrar cursos y tareas por equipo seleccionado
-  const cursosFiltrados = cursos.filter(curso => curso.asignado_a === equipoSeleccionado);
-  const tareasFiltradas = tareas.filter(tarea => tarea.Equipo === equipoSeleccionado);
+  // Filtrar cursos y tareas según equipo seleccionado
+  const cursosFiltrados = equipoSeleccionado
+    ? cursos.filter(curso => curso.asignado_a === equipoSeleccionado)
+    : [];
+
+  const tareasFiltradas = equipoSeleccionado
+    ? tareas.filter(tarea => tarea.Equipo === equipoSeleccionado)
+    : [];
+
+  const infoCursoSeleccionado = cursosFiltrados.find(c => c['Nombre del Programa'] === cursoSeleccionado);
 
   if (cargando) {
     return (
@@ -123,43 +128,67 @@ export default function SistemaGestionTareas() {
     <div className="min-h-screen bg-black text-white p-4 sm:p-6">
       <style>{buttonGlowStyle}</style>
 
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+      {/* FILTRO POR EQUIPO */}
+      <div className="mb-6 max-w-sm">
+        <label className="block mb-2 font-semibold text-white" htmlFor="equipoSelect">
+          Filtrar por Equipo
+        </label>
+        <select
+          id="equipoSelect"
+          value={equipoSeleccionado}
+          onChange={e => {
+            setEquipoSeleccionado(e.target.value);
+            setCursoSeleccionado(''); // limpiar selección curso al cambiar equipo
+          }}
+          className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-green-500"
+        >
+          <option value="">-- Selecciona un equipo --</option>
+          {datos.equipos.map(eq => (
+            <option key={eq} value={eq}>{eq}</option>
+          ))}
+        </select>
+      </div>
 
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold">
-            Panel de visualización de Tareas y Cursos
-          </h1>
-          <div className="flex items-center gap-4">
-            <label htmlFor="equipoSelect" className="block text-sm font-medium text-gray-300 mb-1">Equipo Actual (solo referencia)</label>
-            <select
-              id="equipoSelect"
-              value={equipoSeleccionado}
-              onChange={e => setEquipoSeleccionado(e.target.value)}
-              className="appearance-none p-2 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 pr-8"
-            >
-              {datos.equipos.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
+      {/* NUEVA SECCIÓN: FILTRAR POR CURSO */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">Filtrar por Curso</h2>
+        {cursosFiltrados.length === 0 ? (
+          <p className="text-gray-400">No hay cursos asignados para este equipo.</p>
+        ) : (
+          <select
+            className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-green-500"
+            value={cursoSeleccionado}
+            onChange={e => setCursoSeleccionado(e.target.value)}
+          >
+            <option value="">-- Selecciona un curso --</option>
+            {cursosFiltrados.map((curso, idx) => (
+              <option key={`${curso.ID_Programa}-${idx}`} value={curso['Nombre del Programa']}>
+                {curso['Nombre del Programa']}
+              </option>
+            ))}
+          </select>
+        )}
 
-            {/* Botón refrescar */}
-            <button
-              onClick={cargarDatos}
-              type="button"
-              className="btn-glow px-4 py-2 rounded-xl font-semibold border border-green-500 text-green-400 hover:bg-green-700 transition"
-              title="Refrescar datos"
-            >
-              🔄 Refrescar
-            </button>
+        {cursoSeleccionado && infoCursoSeleccionado && (
+          <div className="mt-4 bg-gray-800 p-4 rounded-lg text-white">
+            <h3 className="text-lg font-semibold mb-2">Detalles del Curso</h3>
+            <p><strong>Programa:</strong> {infoCursoSeleccionado['Nombre del Programa']}</p>
+            <p><strong>Escuela:</strong> {infoCursoSeleccionado['Escuela'] || 'No disponible'}</p>
+            <p><strong>Equipo Asignado:</strong> {infoCursoSeleccionado.asignado_a || 'No asignado'}</p>
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
-            Cursos Asignados (Equipo {equipoSeleccionado})
-          </h2>
-          {cursosFiltrados.length === 0 ? (
-            <p className="text-gray-400">No hay cursos asignados para este equipo.</p>
-          ) : (
-            <table className="min-w-full text-sm border-separate border-spacing-0">
+      {/* Tabla Cursos Asignados */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
+          Cursos Asignados {equipoSeleccionado && `(Equipo ${equipoSeleccionado})`}
+        </h2>
+        {cursosFiltrados.length === 0 ? (
+          <p className="text-gray-400">No hay cursos asignados para este equipo.</p>
+        ) : (
+          <div className="overflow-auto max-h-[70vh] max-w-full border border-gray-700 rounded-xl">
+            <table className="min-w-max w-full text-sm border-separate border-spacing-0">
               <thead className="bg-gray-800 sticky top-0 z-10">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Programa</th>
@@ -183,43 +212,44 @@ export default function SistemaGestionTareas() {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-        <GraphicsLider cursos={cursosFiltrados} tareas={tareasFiltradas} />
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
-            Tareas Registradas (Equipo {equipoSeleccionado})
-          </h2>
-          {tareasFiltradas.length === 0 ? (
-            <p className="text-gray-400">No hay tareas registradas para este equipo.</p>
-          ) : (
-            <div className="overflow-auto max-h-[70vh] max-w-full border border-gray-700 rounded-xl">
-              <table className="min-w-max w-full text-sm border-separate border-spacing-0">
-                <thead className="bg-gray-800 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Equipo</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Materia</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">ID Gránulo</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Fecha Asignación</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-gray-900">
-                  {tareasFiltradas.map((tarea, idx) => (
-                    <tr key={idx} className="hover:bg-gray-800 transition group">
-                      <td className="px-4 py-3 whitespace-nowrap font-medium text-white border-b border-gray-800">{tarea.Equipo}</td>
-                      <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Materia}</td>
-                      <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.ID_Granulo}</td>
-                      <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Fecha_Asignacion}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
+          </div>
+        )}
       </div>
 
+      <GraphicsLider cursos={cursosFiltrados} tareas={tareasFiltradas} />
+
+      {/* Tabla Tareas Registradas */}
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
+          Tareas Registradas {equipoSeleccionado && `(Equipo ${equipoSeleccionado})`}
+        </h2>
+        {tareasFiltradas.length === 0 ? (
+          <p className="text-gray-400">No hay tareas registradas para este equipo.</p>
+        ) : (
+          <div className="overflow-auto max-h-[70vh] max-w-full border border-gray-700 rounded-xl">
+            <table className="min-w-max w-full text-sm border-separate border-spacing-0">
+              <thead className="bg-gray-800 sticky top-0 z-10">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Equipo</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Materia</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">ID Gránulo</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Fecha Asignación</th>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-900">
+                {tareasFiltradas.map((tarea, idx) => (
+                  <tr key={idx} className="hover:bg-gray-800 transition group">
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-white border-b border-gray-800">{tarea.Equipo}</td>
+                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Materia}</td>
+                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.ID_Granulo}</td>
+                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Fecha_Asignacion}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

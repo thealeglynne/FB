@@ -6,7 +6,7 @@
  
     position: relative;
     top: -100;
-    z-index: 1000;
+    z-index: 10;
   }
   
   /* Contenedor del header */
