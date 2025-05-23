@@ -91,7 +91,6 @@ export default function SistemaGestionTareas() {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [materiaSeleccionada, setMateriaSeleccionada] = useState(null);
 
-  // Para edición guardamos el índice de la tarea a editar (null = nueva tarea)
   const [tareaEditIndex, setTareaEditIndex] = useState(null);
 
   const [formAsignacion, setFormAsignacion] = useState({
@@ -183,10 +182,8 @@ export default function SistemaGestionTareas() {
     return (maxId + 1).toString();
   };
 
-  // Cuando se selecciona materia o equipo, inicializamos formulario
   useEffect(() => {
     if (materiaSeleccionada && equipoSeleccionado) {
-      // Si estamos editando, no sobrescribimos el formulario
       if (tareaEditIndex === null) {
         setFormAsignacion({
           Analista: '',
@@ -214,7 +211,6 @@ export default function SistemaGestionTareas() {
       let nuevasTareas = [...tareas];
 
       if (tareaEditIndex !== null) {
-        // Editar tarea existente
         nuevasTareas[tareaEditIndex] = {
           ...nuevasTareas[tareaEditIndex],
           Analista: formAsignacion.Analista,
@@ -228,7 +224,6 @@ export default function SistemaGestionTareas() {
           Observaciones: formAsignacion.Observaciones || '',
         };
       } else {
-        // Crear nueva tarea
         const tareaNueva = {
           Analista: formAsignacion.Analista,
           Auxiliar: formAsignacion.Auxiliar || '',
@@ -307,7 +302,6 @@ export default function SistemaGestionTareas() {
   const handleEliminarTarea = async (index) => {
     if (!confirm('¿Estás seguro que deseas eliminar esta tarea?')) return;
     try {
-      // Encontrar índice real en arreglo completo tareas
       const tarea = tareasDelEquipo[index];
       const indiceGlobal = tareas.findIndex(t =>
         t.Equipo === tarea.Equipo &&
@@ -398,9 +392,10 @@ export default function SistemaGestionTareas() {
           </select>
         </div>
 
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
+        {/* Tabla Cursos Asignados con scroll y fondo uniforme */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6 max-w-full max-h-[80vh] overflow-auto">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold">Cursos Asignados</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-white">Cursos Asignados</h2>
             <button
               disabled={cursosDelEquipo.length === 0}
               onClick={() => {
@@ -420,12 +415,12 @@ export default function SistemaGestionTareas() {
           {cursosDelEquipo.length === 0 ? (
             <p className="text-gray-400">No hay cursos asignados a este equipo.</p>
           ) : (
-            <table className="min-w-full text-sm border-separate border-spacing-0">
-              <thead className="bg-gray-800 sticky top-0 z-10">
+            <table className="min-w-max w-full text-sm border-separate border-spacing-0 bg-gray-900">
+              <thead className="bg-gray-900 sticky top-0 z-10 border-b border-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Programa</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Escuela</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Acciones</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 whitespace-nowrap">Programa</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 whitespace-nowrap border-b border-gray-700">Escuela</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-300 whitespace-nowrap border-b border-gray-700">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-900">

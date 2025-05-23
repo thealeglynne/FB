@@ -1,0 +1,427 @@
+/* Contenedor principal */
+.leader-panel-container {
+    padding: 16px 8px 32px;
+    max-width: 1280px;
+    margin: 0 auto;
+    background-color: #000;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  
+  /* Toast (alerta visual) */
+  .toast {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    min-width: 220px;
+    max-width: 300px;
+    padding: 12px 16px;
+    border-radius: 24px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    animation: fadeIn 0.3s ease forwards;
+  }
+  
+  .toast.info {
+    background-color: #2563eb; /* azul */
+  }
+  
+  .toast.success {
+    background-color: #16a34a; /* verde */
+  }
+  
+  .toast.error {
+    background-color: #b91c1c; /* rojo */
+  }
+  
+  .toast.warn {
+    background-color: #ca8a04; /* amarillo */
+    color: #000;
+  }
+  
+  .toast .message {
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-grow: 1;
+  }
+  
+  .toast .close-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .toast .close-btn:hover {
+    color: rgba(0,0,0,0.8);
+  }
+  
+  /* Botón con efecto glow */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+    background-color: #1f2937; /* gris oscuro */
+    color: white;
+    font-weight: 600;
+    padding: 8px 24px;
+    border-radius: 16px;
+    border: 1px solid #374151; /* borde gris */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 150px;
+    max-width: 100%;
+    text-align: center;
+  }
+  
+  .btn-glow:hover {
+    background-color: #374151;
+  }
+  
+  .btn-glow::after {
+    content: "";
+    position: absolute;
+    left: -75%;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
+    transform: skewX(-20deg);
+    transition: left 0.6s;
+    pointer-events: none;
+  }
+  
+  .btn-glow:hover::after {
+    left: 120%;
+  }
+  
+  /* Modal de formulario */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    z-index: 50;
+  }
+  
+  .modal-content {
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 24px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.75);
+    width: 100%;
+    max-width: 1280px;
+    padding: 32px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  
+  /* Botón cerrar modal */
+  .modal-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #d1d5db;
+    font-size: 2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  
+  .modal-close-btn:hover {
+    color: #ef4444;
+  }
+  
+  /* Etiquetas */
+  .form-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #d1d5db;
+  }
+  
+  /* Inputs y selects */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    background-color: #000;
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+  }
+  
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 4px #16a34a;
+  }
+  
+  /* Textarea */
+  .form-textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  /* Botón enviar en formulario */
+  .form-submit-btn {
+    grid-column: 1 / -1;
+    background-color: #16a34a;
+    color: white;
+    padding: 12px 0;
+    border-radius: 16px;
+    font-weight: 700;
+    border: 1px solid #166534;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 1rem;
+  }
+  
+  .form-submit-btn:hover {
+    background-color: #15803d;
+  }
+  
+  /* Contenedor filtros */
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+    width: 100%;
+  }
+  
+  /* Filtro individual */
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Label filtro */
+  .filter-label {
+    color: #fff;
+    font-size: 0.875rem;
+    margin-bottom: 4px;
+  }
+  
+  /* Selector con flecha */
+  .select-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  
+  .select-wrapper select {
+    appearance: none;
+    width: 100%;
+    padding: 8px 36px 8px 12px;
+    background-color: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  
+  .select-arrow {
+    pointer-events: none;
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 0.875rem;
+    user-select: none;
+  }
+  
+  /* Input filtro */
+  .filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #374151;
+    background-color: #111827;
+    color: #fff;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  
+  /* Botón limpiar filtros */
+  .clear-filters-btn {
+    background-color: #374151;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    max-width: 300px;
+    width: 100%;
+    transition: background-color 0.3s ease;
+  }
+  
+  .clear-filters-btn:hover {
+    background-color: #4b5563;
+  }
+  
+  /* Tabla */
+  .table-container {
+    width: 960px;
+    max-width: 100%;
+    max-height: 60vh;
+    overflow-x: auto;
+    overflow-y: auto;
+    border-radius: 24px;
+    background-color: #111827;
+    border: 1px solid #374151;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 600px;
+    font-size: 0.875rem;
+  }
+  
+  .table thead {
+    background-color: #111827;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .table thead th {
+    padding: 8px 12px;
+    font-weight: 600;
+    color: #d1d5db;
+    border-bottom: 1px solid #374151;
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  .table thead th.actions {
+    text-align: center;
+  }
+  
+  .table tbody tr:hover {
+    background-color: #1f2937;
+    transition: background-color 0.3s ease;
+  }
+  
+  .table tbody td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1f2937;
+    background-color: #000;
+    color: #fff;
+    white-space: nowrap;
+  }
+  
+  .table tbody td:first-child {
+    border-top-left-radius: 24px;
+    border-bottom-left-radius: 24px;
+  }
+  
+  .table tbody td:last-child {
+    border-top-right-radius: 24px;
+    border-bottom-right-radius: 24px;
+  }
+  
+  /* Botones dentro de la tabla */
+  .table-btn {
+    background-color: #111827;
+    color: #fff;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.3s ease;
+    margin-right: 8px;
+  }
+  
+  .table-btn:hover {
+    background-color: #1f2937;
+  }
+  
+  .table-btn.edit {
+    color: #fbbf24; /* amarillo */
+  }
+  
+  .table-btn.delete {
+    background-color: #000;
+    color: #ef4444; /* rojo */
+    border-color: #7f1d1d;
+  }
+  
+  .table-btn.delete:hover {
+    background-color: #b91c1c;
+  }
+  
+  /* Flex para botones de acciones */
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  /* Media Queries */
+  @media (max-width: 640px) {
+    .modal-content {
+      grid-template-columns: 1fr !important;
+      max-width: 95vw;
+      padding: 16px;
+    }
+  
+    .leader-panel-container {
+      padding: 16px 8px 16px;
+    }
+  
+    .table {
+      font-size: 0.75rem;
+    }
+  
+    .btn-glow {
+      width: 100%;
+    }
+  }
+  
+  /* Animación fadeIn */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  
