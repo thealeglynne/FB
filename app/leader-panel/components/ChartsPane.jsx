@@ -11,12 +11,12 @@ import {
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
-// Colores corporativos/siverpunk
+// Paleta con un solo color morado y el resto en tonos azules originales
 const cyberColors = [
-  "#088F8D", // verde azulado brillante
-  "#163A39", // verde pino oscuro
-  "#C3E4EC", // celeste suave
-  "#196463", // verde azulado oscuro
+  "#6A0DAD", // morado intenso (nuevo)
+  "#163A39", // verde pino oscuro (original)
+  "#C3E4EC", // celeste suave (original)
+  "#196463", // verde azulado oscuro (original)
 ];
 
 function getCyberColor(idx, alpha = 1) {
@@ -215,54 +215,98 @@ export default function ChartsPanel({ data }) {
     }]
   };
 
-  // --- Estilos ---
-  const cardStyle = "bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl";
-  const titleStyle = "text-white text-base sm:text-lg font-bold mb-3";
-  const containerStyle = "grid grid-cols-1 md:grid-cols-2 gap-6";
-  const tabActive = "bg-[#088F8D] border-[#088F8D] text-[#C3E4EC] shadow-md";
-  const tabInactive = "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700";
+  // --- Estilos de botones con glow y tamaño reducido ---
+  const tabActive = "btn-glow border text-sm font-semibold rounded-xl shadow-sm";
+  const tabInactive = "btn-glow border text-sm font-semibold rounded-xl shadow-sm bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700";
+
+  // Ancho y padding para botones: max-width 130px, padding pequeño
+  const btnSizeStyles = "px-2 py-1 max-w-[130px]";
 
   function handleToggleInterpolation() {
     setInterpolation(interpolation === "monotone" ? "linear" : "monotone");
   }
 
+  // Estilo para hacer las gráficas con max-height 50vh
+  const chartWrapperStyle = {
+    maxHeight: "50vh",
+    overflow: "hidden"
+  };
+
   return (
-    <div className="pt-6 pb-2">
-      {/* Menú tipo tabs */}
-      <div className="flex gap-2 mb-6">
-        {chartGroups.map((group, idx) => (
-          <button
-            key={group.label}
-            onClick={() => setGroupIndex(idx)}
-            className={`px-4 sm:px-6 py-2 rounded-xl font-semibold border text-base
-              transition-all duration-200 shadow-sm
-              ${groupIndex === idx ? tabActive : tabInactive}
-            `}
-            style={{
-              boxShadow: groupIndex === idx
-                ? "0 0 10px #088F8D66"
-                : undefined
-            }}
-          >
-            {group.label}
-          </button>
-        ))}
-      </div>
-      <div className={containerStyle}>
+    <>
+      <style>{`
+        .btn-glow {
+          position: relative;
+          overflow: hidden;
+          border-width: 1.5px;
+          transition: background-color 0.3s, border-color 0.3s;
+        }
+        .btn-glow::after {
+          content: "";
+          position: absolute;
+          left: -75%;
+          top: 0;
+          width: 50%;
+          height: 100%;
+          background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
+          transform: skewX(-20deg);
+          transition: left 0.6s;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .btn-glow:hover::after {
+          left: 120%;
+        }
+        /* Para que el texto quede por encima del efecto */
+        .btn-glow > * {
+          position: relative;
+          z-index: 2;
+        }
+      `}</style>
+
+      <div className="pt-6 pb-2">
+        {/* Menú tipo tabs */}
+        <div className="flex gap-2 mb-6">
+          {chartGroups.map((group, idx) => (
+            <button
+              key={group.label}
+              onClick={() => setGroupIndex(idx)}
+              className={`${tabActive} ${btnSizeStyles} ${
+                groupIndex === idx
+                  ? "bg-[#6A0DAD] border-[#6A0DAD] text-[#C3E4EC]"
+                  : tabInactive
+              }`}
+              style={{
+                boxShadow: groupIndex === idx
+                  ? "0 0 10px #6A0DAD66"
+                  : undefined
+              }}
+            >
+              {group.label}
+            </button>
+          ))}
+        </div>
+
+        {/* --- Gráficos según grupo seleccionado --- */}
+
         {/* --- NUEVA: Line Styling --- */}
         {chartGroups[groupIndex].charts[0] === "lineAsignaturas" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Tendencia: Promedio de Asignaturas por Semestre</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Tendencia: Promedio de Asignaturas por Semestre</div>
             <Line
               data={lineAsignaturasData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: {
                   legend: {
                     display: true,
                     labels: { color: "#C3E4EC", font: { size: 15 } }
                   },
-                  tooltip: { backgroundColor: "#088F8D" }
+                  tooltip: { backgroundColor: "#6A0DAD" }
                 },
                 animation: { duration: 1200 },
                 scales: {
@@ -277,19 +321,24 @@ export default function ChartsPanel({ data }) {
                   }
                 }
               }}
+              height={null}
+              width={null}
             />
           </div>
         )}
 
-        {/* Combo Temporal con Interpolation Toggle */}
+        {/* Combo Temporal con botón interpolación */}
         {chartGroups[groupIndex].charts[1] === "comboTemporal" && (
-          <div className={cardStyle}>
-            <div className={titleStyle + " flex items-center gap-4"}>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3 flex items-center gap-4">
               Cronograma: Entregas vs. Promedio de Asignaturas
               <button
-                className="ml-auto px-3 py-1 rounded-md font-semibold border border-[#088F8D] bg-[#088F8D] text-[#C3E4EC] hover:bg-[#196463] hover:border-[#196463] transition"
                 onClick={handleToggleInterpolation}
-                style={{ boxShadow: "0 0 6px #088F8D" }}
+                className={`btn-glow ${btnSizeStyles} bg-[#6A0DAD] border-[#6A0DAD] text-[#C3E4EC] rounded-md font-semibold transition`}
+                style={{ boxShadow: "0 0 6px #6A0DAD" }}
               >
                 Interpolación: {interpolation === "monotone" ? "Suavizada" : "Lineal"}
               </button>
@@ -297,6 +346,7 @@ export default function ChartsPanel({ data }) {
             <Bar
               data={comboTemporalData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: {
                   legend: { position: "bottom", labels: { color: "#C3E4EC", font: { size: 13 } } }
@@ -321,17 +371,23 @@ export default function ChartsPanel({ data }) {
                   }
                 }
               }}
+              height={null}
+              width={null}
             />
           </div>
         )}
 
         {/* Polar Modalidad */}
         {chartGroups[groupIndex].charts[0] === "polarModalidad" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Distribución de Modalidades</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Distribución de Modalidades</div>
             <PolarArea
               data={polarData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: {
                   legend: {
@@ -339,7 +395,7 @@ export default function ChartsPanel({ data }) {
                     position: "bottom",
                     labels: { color: "#C3E4EC", font: { size: 13 } }
                   },
-                  tooltip: { enabled: true, backgroundColor: "#088F8D" }
+                  tooltip: { enabled: true, backgroundColor: "#6A0DAD" }
                 },
                 animation: { duration: 1300 }
               }}
@@ -349,18 +405,22 @@ export default function ChartsPanel({ data }) {
 
         {/* Radar Estado */}
         {chartGroups[groupIndex].charts[1] === "radarEstado" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Estados por Modalidad</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Estados por Modalidad</div>
             <Radar
               data={radarEstadoData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: { legend: { position: "bottom", labels: { color: "#C3E4EC" } } },
                 scales: {
                   r: {
                     angleLines: { color: "#232d2e" },
                     pointLabels: { color: "#C3E4EC", font: { size: 14 } },
-                    ticks: { color: "#088F8D", stepSize: 1, backdropColor: "transparent" }
+                    ticks: { color: "#6A0DAD", stepSize: 1, backdropColor: "transparent" }
                   }
                 },
                 animation: { duration: 1300 }
@@ -371,11 +431,15 @@ export default function ChartsPanel({ data }) {
 
         {/* Bubble Chart */}
         {chartGroups[groupIndex].charts[0] === "bubbleAsignaturas" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Asignaturas vs. Semestre (por Programa)</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Asignaturas vs. Semestre (por Programa)</div>
             <Bubble
               data={bubbleAsignaturasData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: {
                   tooltip: {
@@ -411,11 +475,15 @@ export default function ChartsPanel({ data }) {
 
         {/* Floating Bars */}
         {chartGroups[groupIndex].charts[1] === "floatingBarSemestre" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Carga Académica por Semestre (Rangos)</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Carga Académica por Semestre (Rangos)</div>
             <Bar
               data={floatingBarData}
               options={{
+                maintainAspectRatio: false,
                 indexAxis: 'x',
                 elements: {
                   bar: {
@@ -454,11 +522,15 @@ export default function ChartsPanel({ data }) {
 
         {/* Bar Chart Estado */}
         {chartGroups[groupIndex].charts[1] === "barEstado" && (
-          <div className={cardStyle}>
-            <div className={titleStyle}>Estado de Entregas por Programa</div>
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-6 transition-all hover:shadow-2xl"
+            style={chartWrapperStyle}
+          >
+            <div className="text-white text-base sm:text-lg font-bold mb-3">Estado de Entregas por Programa</div>
             <Bar
               data={barEstadoData}
               options={{
+                maintainAspectRatio: false,
                 responsive: true,
                 plugins: {
                   legend: { display: false },
@@ -474,6 +546,6 @@ export default function ChartsPanel({ data }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
