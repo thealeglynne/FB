@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import ChartsPanel from './components/ChartsPane';
+import NewUser from '../components/newUser/usuarioNuevo'
 
 // -------------------
 // Toast (alerta visual)
@@ -145,7 +146,7 @@ export default function LeaderPanel() {
         type={toast.type}
         onClose={() => setToast({ ...toast, show: false })}
       />
-  
+     <NewUser />
       {/* Botón para mostrar el formulario */}
       {!showForm && (
         <div className="flex justify-center my-4">

@@ -39,10 +39,10 @@ Optimiza cada etapa, mejora la colaboración y garantiza la calidad en cada entr
 
   return (
     <main
-      className="relative w-full min-h-[80vh] flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-8 text-white"
+      className="relative w-100vw min-h-[80vh] flex flex-col md:flex-row items-center justify-center px-6 py-12 gap-8 text-white"
       style={{
-        backgroundImage: "url('https://i.pinimg.com/originals/47/6b/6c/476b6cad083d66ff7c9ef2bff1d892a8.gif')",
-        backgroundSize: '60%',
+        backgroundImage: "url('https://i.pinimg.com/originals/bf/c3/fb/bfc3fb764ff5f4d8d9ecb6da8544709c.gif')",
+        backgroundSize: '90%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
       }}

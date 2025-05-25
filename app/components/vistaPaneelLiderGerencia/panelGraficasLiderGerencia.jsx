@@ -5,6 +5,7 @@ import { Line, PolarArea, Bubble, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
 
+// Paleta solo AZUL-CYAN
 const cyberColors = [
   "#088F8D", "#163A39", "#C3E4EC", "#196463"
 ];
@@ -73,12 +74,18 @@ export default function GraphicsLider({ cursos, tareas }) {
       {
         label: "Tareas Asignadas",
         data: tareasPorMateria.map(t => t.asignadas),
-        backgroundColor: getCyberColor(0, 0.7),
+        backgroundColor: getCyberColor(0, 0.77),
+        borderColor: getCyberColor(0, 1),
+        borderWidth: 2,
+        borderRadius: 6
       },
       {
         label: "Tareas No Asignadas",
         data: tareasPorMateria.map(t => t.noAsignadas),
-        backgroundColor: getCyberColor(1, 0.7),
+        backgroundColor: getCyberColor(1, 0.63),
+        borderColor: getCyberColor(1, 1),
+        borderWidth: 2,
+        borderRadius: 6
       }
     ]
   };
@@ -89,11 +96,11 @@ export default function GraphicsLider({ cursos, tareas }) {
       label: "Asignaciones por Día",
       data: asignacionesPorFecha.data,
       borderColor: getCyberColor(0),
-      backgroundColor: getCyberColor(0, 0.3),
+      backgroundColor: getCyberColor(2, 0.26),
       fill: true,
-      tension: 0.3,
+      tension: 0.36,
       pointRadius: 2,
-      pointHoverRadius: 4
+      pointHoverRadius: 5
     }]
   };
 
@@ -107,8 +114,8 @@ export default function GraphicsLider({ cursos, tareas }) {
     datasets: [{
       label: "Cursos por Escuela",
       data: escuelas.map(esc => cursos.filter(c => (c['Escuela'] || "Sin Escuela") === esc).length),
-      backgroundColor: escuelas.map((_, i) => getCyberColor(i, 0.35)),
-      borderColor: escuelas.map((_, i) => getCyberColor(i, 1)),
+      backgroundColor: escuelas.map((_, i) => getCyberColor(i, 0.27)),
+      borderColor: escuelas.map((_, i) => getCyberColor(i, 0.95)),
       borderWidth: 2,
     }]
   };
@@ -133,31 +140,32 @@ export default function GraphicsLider({ cursos, tareas }) {
         return {
           label: mat,
           data: [{ x: i + 1, y: tareasMateria, r: Math.min(tareasMateria * 1.5 + 4, 20) }],
-          backgroundColor: getCyberColor(i),
+          backgroundColor: getCyberColor(i, 0.8),
           borderColor: getCyberColor(i, 1),
-          borderWidth: 1
+          borderWidth: 2
         };
       })
     };
   }, [cursos, tareas]);
 
-  const cardStyle = "bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-2 sm:p-4 mb-4";
-  const titleStyle = "text-white text-base sm:text-md font-bold mb-2";
-  const containerStyle = "grid grid-cols-1 md:grid-cols-2 gap-4";
+  // Nuevo: estilos de panel y botones para el panel "trading"
+  const cardStyle = "bg-[#0e151a] border-2 border-[#088F8D] rounded-md shadow-[0_0_38px_6px_#088F8D55] p-4 sm:p-7 mb-8 h-[56vh] min-h-[340px] overflow-y-auto hover:border-[#32e4e2] transition-all";
+  const titleStyle = "text-[#C3E4EC] text-lg font-extrabold tracking-wide mb-3 drop-shadow-md";
+  const containerStyle = "grid grid-cols-1 md:grid-cols-2 gap-8";
 
-  const tabActive = "bg-[#088F8D] border-[#088F8D] text-[#C3E4EC] shadow-md text-sm";
-  const tabInactive = "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 text-sm";
+  // Tabs agresivos, menos rounded y con glow azul
+  const tabActive = "bg-[#0e151a] border-[#088F8D] text-[#C3E4EC] font-bold shadow-[0_0_18px_#088F8D55] border-2 rounded-md";
+  const tabInactive = "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-900 border-2 rounded-md font-bold";
 
   return (
     <div className="pt-4 pb-2">
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-3 mb-5">
         {chartGroups.map((group, idx) => (
           <button
             key={group.label}
             onClick={() => setGroupIndex(idx)}
-            className={`px-3 py-1 rounded-xl font-semibold border transition-all duration-200 shadow-sm
-              ${groupIndex === idx ? tabActive : tabInactive}`}
-            style={{ boxShadow: groupIndex === idx ? "0 0 8px #088F8D66" : undefined }}
+            className={`px-4 py-1.5 text-sm transition-all duration-200 ${groupIndex === idx ? tabActive : tabInactive}`}
+            style={{ boxShadow: groupIndex === idx ? "0 0 16px #088F8D77" : undefined }}
           >
             {group.label}
           </button>
@@ -169,58 +177,72 @@ export default function GraphicsLider({ cursos, tareas }) {
           switch (chartName) {
             case "barAsignacion":
               return (
-                <div key={chartName} className={cardStyle} style={{ maxHeight: 280, maxWidth: '100%' }}>
+                <div key={chartName} className={cardStyle}>
                   <div className={titleStyle}>Tareas Asignadas vs No Asignadas por Materia</div>
                   <Bar data={barData} options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                      legend: { labels: { color: 'white', font: { size: 11 } } },
-                      tooltip: { backgroundColor: '#088F8D', bodyFont: { size: 12 } },
+                      legend: { labels: { color: '#C3E4EC', font: { size: 13 } } },
+                      tooltip: { backgroundColor: '#088F8D', bodyFont: { size: 13 } },
                     },
                     scales: {
-                      x: { ticks: { color: 'white', maxRotation: 60, minRotation: 30, font: { size: 10 } }, stacked: true },
-                      y: { stacked: true, ticks: { color: 'white', beginAtZero: true, font: { size: 10 } } }
+                      x: { 
+                        ticks: { color: '#C3E4EC', maxRotation: 60, minRotation: 30, font: { size: 11 } }, 
+                        stacked: true,
+                        grid: { color: '#163A39' }
+                      },
+                      y: { 
+                        stacked: true, 
+                        ticks: { color: '#C3E4EC', beginAtZero: true, font: { size: 11 } }, 
+                        grid: { color: '#163A39' }
+                      }
                     }
-                  }} />
+                  }} height={null} width={null} />
                 </div>
               );
             case "lineAsignacionFecha":
               return (
-                <div key={chartName} className={cardStyle} style={{ maxHeight: 280, maxWidth: '100%' }}>
+                <div key={chartName} className={cardStyle}>
                   <div className={titleStyle}>Asignaciones Recientes por Fecha (últimos 30 días)</div>
                   <Line data={lineData} options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                      legend: { labels: { color: 'white', font: { size: 11 } } },
-                      tooltip: { backgroundColor: '#088F8D', bodyFont: { size: 12 } },
+                      legend: { labels: { color: '#C3E4EC', font: { size: 13 } } },
+                      tooltip: { backgroundColor: '#088F8D', bodyFont: { size: 13 } },
                     },
                     scales: {
-                      x: { ticks: { color: 'white', maxRotation: 60, minRotation: 30, font: { size: 10 } }, grid: { color: '#333' } },
-                      y: { ticks: { color: 'white', beginAtZero: true, stepSize: 1, font: { size: 10 } }, grid: { color: '#333' } }
+                      x: { 
+                        ticks: { color: '#C3E4EC', maxRotation: 60, minRotation: 30, font: { size: 11 } }, 
+                        grid: { color: '#163A39' }
+                      },
+                      y: { 
+                        ticks: { color: '#C3E4EC', beginAtZero: true, stepSize: 1, font: { size: 11 } }, 
+                        grid: { color: '#163A39' }
+                      }
                     }
-                  }} />
+                  }} height={null} width={null} />
                 </div>
               );
             case "polarEscuelas":
               return (
-                <div key={chartName} className={cardStyle} style={{ maxHeight: 280, maxWidth: '100%' }}>
+                <div key={chartName} className={cardStyle}>
                   <div className={titleStyle}>Distribución de Cursos por Escuela</div>
                   <PolarArea data={polarData} options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                      legend: { position: "bottom", labels: { color: "#C3E4EC", font: { size: 10 } } },
-                      tooltip: { backgroundColor: "#088F8D", bodyFont: { size: 12 } }
+                      legend: { position: "bottom", labels: { color: "#C3E4EC", font: { size: 13 } } },
+                      tooltip: { backgroundColor: "#088F8D", bodyFont: { size: 13 } }
                     },
                     animation: { duration: 900 }
-                  }} />
+                  }} height={null} width={null} />
                 </div>
               );
             case "bubbleCursos":
               return (
-                <div key={chartName} className={cardStyle} style={{ maxHeight: 280, maxWidth: '100%' }}>
+                <div key={chartName} className={cardStyle}>
                   <div className={titleStyle}>Número de tareas por curso (Burbuja)</div>
                   <Bubble data={bubbleData} options={{
                     responsive: true,
@@ -228,7 +250,7 @@ export default function GraphicsLider({ cursos, tareas }) {
                     plugins: {
                       tooltip: {
                         backgroundColor: "#196463",
-                        bodyFont: { size: 12 },
+                        bodyFont: { size: 13 },
                         callbacks: {
                           label: ctx => {
                             const d = ctx.raw;
@@ -239,10 +261,18 @@ export default function GraphicsLider({ cursos, tareas }) {
                       legend: { display: false }
                     },
                     scales: {
-                      x: { title: { display: true, text: "Curso (ID)", color: "#C3E4EC", font: { size: 11 } }, grid: { color: "#232d2e" }, ticks: { color: "#C3E4EC", font: { size: 10 } } },
-                      y: { title: { display: true, text: "Cantidad Tareas", color: "#C3E4EC", font: { size: 11 } }, grid: { color: "#232d2e" }, ticks: { color: "#C3E4EC", beginAtZero: true, font: { size: 10 } } }
+                      x: { 
+                        title: { display: true, text: "Curso (ID)", color: "#C3E4EC", font: { size: 13 } }, 
+                        grid: { color: "#163A39" }, 
+                        ticks: { color: "#C3E4EC", font: { size: 11 } } 
+                      },
+                      y: { 
+                        title: { display: true, text: "Cantidad Tareas", color: "#C3E4EC", font: { size: 13 } }, 
+                        grid: { color: "#163A39" }, 
+                        ticks: { color: "#C3E4EC", beginAtZero: true, font: { size: 11 } } 
+                      }
                     }
-                  }} />
+                  }} height={null} width={null} />
                 </div>
               );
             default:

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import GraphicsLider from '../vistaPaneelLiderGerencia/panelGraficasLiderGerencia';
-
+import VisualEquipos from '../VisualizadorIntegrantesEquipo/VisualizadorIntegrantesEquipo'
 const datos = {
   equipos: ['ALFA','GAMA','DELTA','SIGMA','LAMDA','OMGA']
 };
@@ -148,6 +148,7 @@ export default function SistemaGestionTareas() {
           ))}
         </select>
       </div>
+      <VisualEquipos equipo={equipoSeleccionado} tareas={tareas} />
 
       {/* NUEVA SECCIÓN: FILTRAR POR CURSO */}
       <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6">

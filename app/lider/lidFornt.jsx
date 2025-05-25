@@ -1,90 +1,17 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import HeaderON from '../components/header/headerON';
-
-const datos = {
-  analistas: [
-    'BLANCA ALEJANDRA HERRERA DUCUARA','DAISSY YURANI ARDILA PRIETO',
-    'DARIO FERNANDO NAVARRO PARRA','DIEGO FERNANDO PEREZ MINDIOLA',
-    'DORIS KATHERINE AVILA HERNANDEZ','EDWIN ESNEIDER RIATIGA GALVAN',
-    'GEORGINA GARIZADO CABARCAS','HERNAN FELIPE CASTRO ESPINOSA',
-    'JEIMMY PAOLA CARO CASTILLO','JORGE EDUARDO LEON ESCOBAR',
-    'JULIAN YESID RUIZ ROJAS','KEVIN ALEXANDER CÁRDENAS NAISA',
-    'LAURA ANDREA BARON GARZON','LAURA FERNANDA MEDINA ROMERO',
-    'LAURA MILENA MORA BLANCO','LAURA SOFIA ESTUPIÑAN CORREA',
-    'LAURA VICTORIA PATIÑO NARANJO','LEANDRO AREVALO TORRES',
-    'LESLY NATALIA CARDOZO ESCOBAR','LEYDI MARIANA ARDILA REYES',
-    'LINA MARCELA BABATIVA AGUILAR','MARIA DEL MAR SORACIPA MORA',
-    'MIGUEL ANDRES MANCERA ORTIZ','NICOLAS DAVID PASTOR LOPEZ',
-    'NIDIA MARCELA PRADA RAMIREZ','PAOLA ANDREA RODRIGUEZ PULIDO',
-    'RUBEN FERNANDO MUÑOZ NIÑO','SAMUEL ESTEBAN CORTES LEAL',
-    'SERGIO ALEJANDRO LOPEZ TERRONT','YAKO YUYAY JACANAMIJOY IGUARAN',
-    'YULE VIVIANA CASTILLO BERNAL'
-  ],
-  auxiliares: [
-    'BRAYAN GUTIERREZ MIRANDA','CAMILO ALEJANDRO RAMOS YUSTY',
-    'HAMILTHON MUÑOZ PORRAS','JULIANA SOFIA CORREA ARAQUE',
-    'LINA MARCELA BABATIVA AGUILAR','LUIS MIGUEL CUSPIAN ANGUCHO',
-    'MARIANA RODRIGUEZ CEBALLOS','PAULA ANDREA VERU ESPARZA'
-  ],
-  practicantes: [
-    'JUAN DAVID LEON BERGEL','NICOLAS GUEVARA GUTIERREZ'
-  ],
-  equipos: ['ALFA','GAMA','DELTA','SIGMA','LAMDA','OMGA'],
-  materias: [
-    'Administración de Empresas Turísticas y Hoteleras RU',
-    'ADMINISTRACIÓN DE LA SEGURIDAD Y LA SALUD EN EL TRABAJO (SST) RU',
-    'Seguimiento DOCENTES',
-    'Administración de Emp Turísticas y Hoteleras: I Semestre.',
-    'Administración SST','Negocios Internacionales',
-    'Diplomado en Medicina Preventiva en el Trabajo',
-    'Diplomado en Sistemas de Información Geográfica',
-    'Diplomado en computación en la nube para sistemas inteligentes',
-    'Ingeniería en Diseño de Producto','Ingeniería de Software',
-    'INGENIERÍA DE DATOS E INTELINGENCIA ARTIFICIAL RU','INGENIERÍA QUÍMICA',
-    'Ingeniería de Datos e Inteligencia Artificial RU',
-    'Especialización en inteligencia artificial','Ingenieria de producto',
-    'Diplomado en Banca y Medios de Pagos Internacionales',
-    'Diplomado en Gestión Sostenible del Turismo',
-    'Diplomado en Auditoría de Sistemas Integrados de Gestión',
-    'Espacios de practica','Listado de preguntas [Fuera de contexto]',
-    'Grabación Lites','Cotización capsulas','Presentación de proyecto',
-    'Revisión Avatar diseño de modas','Derecho Laboral y SS',
-    'Diseño de Exp Interactivas','Diplomado en Branding',
-    'Diplomado en Seguridad y Salud en el Trabajo para Operaciones Logísticas',
-    'Metricas'
-  ]
-};
 
 const BIN_ID_CURSOS = '682f27e08960c979a59f5afe';
 const BIN_ID_TAREAS = '682f89858a456b7966a3e42c';
+const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
 const API_KEY_ACCESS = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
 
-const buttonGlowStyle = `
-  .btn-glow {
-    position: relative;
-    overflow: hidden;
-  }
-  .btn-glow::after {
-    content: "";
-    position: absolute;
-    left: -75%;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
-    transform: skewX(-20deg);
-    transition: left 0.6s;
-    pointer-events: none;
-  }
-  .btn-glow:hover::after {
-    left: 120%;
-  }
-`;
+const equipos = ['ALFA','GAMA','DELTA','SIGMA','LAMDA','OMGA','KAPPA','THETA'];
 
-export default function SistemaGestionTareas() {
+export default function SistemaGestionTareasDinamico() {
   const [cursos, setCursos] = useState([]);
   const [tareas, setTareas] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [equipoSeleccionado, setEquipoSeleccionado] = useState('');
   const [cargando, setCargando] = useState(true);
 
@@ -105,54 +32,23 @@ export default function SistemaGestionTareas() {
     Observaciones: '',
   });
 
+  // --- CARGA DE DATOS ---
   useEffect(() => {
     async function cargarDatos() {
       setCargando(true);
       try {
-        const resCursos = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, {
-          headers: { 'X-Access-Key': API_KEY_ACCESS }
-        });
+        const [resCursos, resTareas, resUsuarios] = await Promise.all([
+          fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, { headers: { 'X-Access-Key': API_KEY_ACCESS }}),
+          fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, { headers: { 'X-Access-Key': API_KEY_ACCESS }}),
+          fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_USUARIOS}`, { headers: { 'X-Access-Key': API_KEY_ACCESS }}),
+        ]);
         const dataCursos = await resCursos.json();
-        const cursosData = Array.isArray(dataCursos.record) ? dataCursos.record : [];
-
-        const resTareas = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
-          headers: { 'X-Access-Key': API_KEY_ACCESS }
-        });
         const dataTareas = await resTareas.json();
-        const tareasData = Array.isArray(dataTareas.record) ? dataTareas.record : [];
+        const dataUsuarios = await resUsuarios.json();
 
-        let cursosActualizados = [...cursosData];
-        const cursosSinAsignar = cursosData.filter(c => !c.asignado_a);
-        if (cursosSinAsignar.length > 0) {
-          const conteoEquipos = datos.equipos.map(equipo => ({
-            equipo,
-            count: cursosData.filter(c => c.asignado_a === equipo).length
-          })).sort((a, b) => a.count - b.count);
-
-          let equipoIndex = 0;
-          cursosSinAsignar.forEach(curso => {
-            const equipo = conteoEquipos[equipoIndex % conteoEquipos.length].equipo;
-            cursosActualizados = cursosActualizados.map(c =>
-              c.ID_Programa === curso.ID_Programa && c['Nombre del Programa'] === curso['Nombre del Programa']
-                ? { ...c, asignado_a: equipo }
-                : c
-            );
-            equipoIndex++;
-          });
-
-          await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Access-Key': API_KEY_ACCESS,
-              'X-Bin-Versioning': 'false'
-            },
-            body: JSON.stringify(cursosActualizados)
-          });
-        }
-
-        setCursos(cursosActualizados);
-        setTareas(tareasData);
+        setCursos(Array.isArray(dataCursos.record) ? dataCursos.record : []);
+        setTareas(Array.isArray(dataTareas.record) ? dataTareas.record : []);
+        setUsuarios(Array.isArray(dataUsuarios.record) ? dataUsuarios.record : []);
       } catch (error) {
         console.error('Error cargando datos:', error);
       } finally {
@@ -162,16 +58,46 @@ export default function SistemaGestionTareas() {
     cargarDatos();
   }, []);
 
+  // Cursos del equipo SIN tarea asignada
+  function cursoYaAsignado(curso) {
+    return tareas.some(t =>
+      t.Equipo === curso.asignado_a &&
+      t.Materia === curso['Nombre del Programa'] &&
+      (
+        t.Analista?.trim() ||
+        t.Auxiliar?.trim() ||
+        t.Practicante?.trim()
+      )
+    );
+  }
+
   const cursosDelEquipo = useMemo(() => {
     if (!equipoSeleccionado) return [];
-    return cursos.filter(c => c.asignado_a === equipoSeleccionado);
-  }, [equipoSeleccionado, cursos]);
+    return cursos
+      .filter(c => c.asignado_a === equipoSeleccionado)
+      .filter(c => !cursoYaAsignado(c));
+  }, [equipoSeleccionado, cursos, tareas]);
 
   const tareasDelEquipo = useMemo(() => {
     if (!equipoSeleccionado) return [];
     return tareas.filter(t => t.Equipo === equipoSeleccionado);
   }, [equipoSeleccionado, tareas]);
 
+  // --- USUARIOS FILTRADOS POR EQUIPO Y ROL ---
+  const analistasEquipo = useMemo(() =>
+    usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado),
+    [usuarios, equipoSeleccionado]
+  );
+  const auxiliaresEquipo = useMemo(() =>
+    usuarios.filter(u => u.rol === 'auxiliar' && u.equipo === equipoSeleccionado),
+    [usuarios, equipoSeleccionado]
+  );
+  const practicantesEquipo = useMemo(() =>
+    usuarios.filter(u => u.rol === 'practicante' && u.equipo === equipoSeleccionado),
+    [usuarios, equipoSeleccionado]
+  );
+
+  // --- LOGICA DE TAREAS ---
   const generarIdGranulo = () => {
     if (!equipoSeleccionado) return '1';
     const tareasEquipo = tareas.filter(t => t.Equipo === equipoSeleccionado);
@@ -209,7 +135,6 @@ export default function SistemaGestionTareas() {
 
     try {
       let nuevasTareas = [...tareas];
-
       if (tareaEditIndex !== null) {
         nuevasTareas[tareaEditIndex] = {
           ...nuevasTareas[tareaEditIndex],
@@ -276,33 +201,11 @@ export default function SistemaGestionTareas() {
     }
   };
 
-  const handleEditarTarea = (index) => {
-    const tarea = tareasDelEquipo[index];
-    setTareaEditIndex(tareas.findIndex(t => 
-      t.Equipo === tarea.Equipo &&
-      t.Materia === tarea.Materia &&
-      t.ID_Granulo === tarea.ID_Granulo &&
-      t.Nombre_Granulo === tarea.Nombre_Granulo
-    ));
-    setFormAsignacion({
-      Analista: tarea.Analista,
-      Auxiliar: tarea.Auxiliar,
-      Practicante: tarea.Practicante,
-      Equipo: tarea.Equipo,
-      Materia: tarea.Materia,
-      ID_Granulo: tarea.ID_Granulo,
-      Nombre_Granulo: tarea.Nombre_Granulo,
-      Fecha_Asignacion: tarea.Fecha_Asignacion,
-      Observaciones: tarea.Observaciones || '',
-    });
-    setMateriaSeleccionada({ 'Nombre del Programa': tarea.Materia });
-    setMostrarFormulario(true);
-  };
-
-  const handleEliminarTarea = async (index) => {
-    if (!confirm('¿Estás seguro que deseas eliminar esta tarea?')) return;
+  // NUEVO: ELIMINAR TAREA
+  const handleEliminarTarea = async (idx) => {
+    if (!confirm('¿Deseas eliminar esta tarea? El curso volverá a estar disponible en “Cursos Asignados”.')) return;
     try {
-      const tarea = tareasDelEquipo[index];
+      const tarea = tareasDelEquipo[idx];
       const indiceGlobal = tareas.findIndex(t =>
         t.Equipo === tarea.Equipo &&
         t.Materia === tarea.Materia &&
@@ -310,10 +213,8 @@ export default function SistemaGestionTareas() {
         t.Nombre_Granulo === tarea.Nombre_Granulo
       );
       if (indiceGlobal === -1) return;
-
       const nuevasTareas = [...tareas];
       nuevasTareas.splice(indiceGlobal, 1);
-
       setTareas(nuevasTareas);
 
       await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
@@ -326,17 +227,18 @@ export default function SistemaGestionTareas() {
         body: JSON.stringify(nuevasTareas),
       });
     } catch (error) {
-      console.error('Error eliminando tarea:', error);
-      alert('Error al eliminar la tarea, intenta de nuevo.');
+      alert('Error al eliminar la tarea');
     }
   };
+
+  // -------------------------------------------
 
   if (cargando) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-500 mb-4"></div>
-          <p className="text-lg">Cargando y distribuyendo materias...</p>
+          <p className="text-lg">Cargando datos...</p>
         </div>
       </div>
     );
@@ -358,7 +260,7 @@ export default function SistemaGestionTareas() {
             className="appearance-none w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 pr-8"
           >
             <option value="">-- Selecciona un equipo --</option>
-            {datos.equipos.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+            {equipos.map(eq => <option key={eq} value={eq}>{eq}</option>)}
           </select>
         </div>
       </div>
@@ -367,32 +269,35 @@ export default function SistemaGestionTareas() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <style>{buttonGlowStyle}</style>
-  
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
 
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 flex justify-between items-center">
-          <h1 className="text-xl sm:text-2xl font-bold">
-            Panel del Equipo:&nbsp;
-            <span className="ml-2 bg-green-700 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              {equipoSeleccionado}
-            </span>
-          </h1>
-          <select
-            value={equipoSeleccionado}
-            onChange={e => {
-              setEquipoSeleccionado(e.target.value);
-              setMateriaSeleccionada(null);
-              setMostrarFormulario(false);
-              setTareaEditIndex(null);
-            }}
-            className="appearance-none p-2 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-green-500 pr-8"
-          >
-                       {datos.equipos.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-          </select>
+        {/* NUEVO: Tabla de analistas del equipo */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-4">
+          <h2 className="text-lg font-bold text-cyan-400 mb-2">Analistas del equipo {equipoSeleccionado}</h2>
+          {analistasEquipo.length === 0
+            ? <div className="text-gray-400">No hay analistas registrados en este equipo.</div>
+            : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="text-left px-2 py-1 text-cyan-400">Nombre</th>
+                    <th className="text-left px-2 py-1 text-cyan-400">Correo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analistasEquipo.map((a, i) => (
+                    <tr key={i}>
+                      <td className="px-2 py-1">{a.nombreCompleto}</td>
+                      <td className="px-2 py-1">{a.correo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )
+          }
         </div>
 
-        {/* Tabla Cursos Asignados con scroll y fondo uniforme */}
+        {/* Cursos asignados */}
         <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6 max-w-full max-h-[80vh] overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg sm:text-xl font-semibold text-white">Cursos Asignados</h2>
@@ -411,9 +316,8 @@ export default function SistemaGestionTareas() {
               Nueva Tarea
             </button>
           </div>
-
           {cursosDelEquipo.length === 0 ? (
-            <p className="text-gray-400">No hay cursos asignados a este equipo.</p>
+            <p className="text-gray-400">No hay cursos asignados a este equipo pendientes por tarea.</p>
           ) : (
             <table className="min-w-max w-full text-sm border-separate border-spacing-0 bg-gray-900">
               <thead className="bg-gray-900 sticky top-0 z-10 border-b border-gray-700">
@@ -470,7 +374,6 @@ export default function SistemaGestionTareas() {
               </button>
               <h2 className="text-xl font-bold text-white mb-2">{tareaEditIndex !== null ? 'Editar Tarea' : 'Asignar Tarea'}</h2>
               <p className="text-sm text-green-400 mb-4">{materiaSeleccionada['Nombre del Programa']}</p>
-
               <form onSubmit={handleGuardarTarea} className="space-y-4">
                 {/* Analista */}
                 <div>
@@ -482,13 +385,12 @@ export default function SistemaGestionTareas() {
                     required
                   >
                     <option value="">-- Selecciona un analista --</option>
-                    {datos.analistas.map((a, i) => (
-                      <option key={i} value={a}>{a}</option>
+                    {analistasEquipo.map((a, i) => (
+                      <option key={i} value={a.nombreCompleto}>{a.nombreCompleto}</option>
                     ))}
                   </select>
                 </div>
-
-                {/* Auxiliar (opcional) */}
+                {/* Auxiliar */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Auxiliar (opcional)</label>
                   <select
@@ -497,13 +399,12 @@ export default function SistemaGestionTareas() {
                     className="w-full p-2 border border-gray-700 rounded-lg bg-black text-white text-sm"
                   >
                     <option value="">-- Selecciona un auxiliar --</option>
-                    {datos.auxiliares.map((a, i) => (
-                      <option key={i} value={a}>{a}</option>
+                    {auxiliaresEquipo.map((a, i) => (
+                      <option key={i} value={a.nombreCompleto}>{a.nombreCompleto}</option>
                     ))}
                   </select>
                 </div>
-
-                {/* Practicante (opcional) */}
+                {/* Practicante */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Practicante (opcional)</label>
                   <select
@@ -512,12 +413,11 @@ export default function SistemaGestionTareas() {
                     className="w-full p-2 border border-gray-700 rounded-lg bg-black text-white text-sm"
                   >
                     <option value="">-- Selecciona un practicante --</option>
-                    {datos.practicantes.map((p, i) => (
-                      <option key={i} value={p}>{p}</option>
+                    {practicantesEquipo.map((p, i) => (
+                      <option key={i} value={p.nombreCompleto}>{p.nombreCompleto}</option>
                     ))}
                   </select>
                 </div>
-
                 {/* ID Gránulo */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">ID Gránulo *</label>
@@ -529,7 +429,6 @@ export default function SistemaGestionTareas() {
                     required
                   />
                 </div>
-
                 {/* Nombre Gránulo */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Nombre Gránulo *</label>
@@ -541,7 +440,6 @@ export default function SistemaGestionTareas() {
                     required
                   />
                 </div>
-
                 {/* Fecha de Asignación */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Fecha de Asignación *</label>
@@ -553,7 +451,6 @@ export default function SistemaGestionTareas() {
                     required
                   />
                 </div>
-
                 {/* Observaciones */}
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Observaciones</label>
@@ -564,7 +461,6 @@ export default function SistemaGestionTareas() {
                     rows="3"
                   />
                 </div>
-
                 {/* Botones */}
                 <div className="flex justify-end gap-3">
                   <button
@@ -624,14 +520,6 @@ export default function SistemaGestionTareas() {
                       <td className="px-4 py-3 whitespace-nowrap text-gray-400 border-b border-gray-800">{tarea.Observaciones || '-'}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-center border-b border-gray-800 space-x-2">
                         <button
-                          onClick={() => handleEditarTarea(idx)}
-                          className="text-yellow-400 hover:text-yellow-300 font-semibold"
-                          aria-label="Editar tarea"
-                          title="Editar tarea"
-                        >
-                          Editar
-                        </button>
-                        <button
                           onClick={() => handleEliminarTarea(idx)}
                           className="text-red-500 hover:text-red-400 font-semibold"
                           aria-label="Eliminar tarea"
@@ -647,7 +535,6 @@ export default function SistemaGestionTareas() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
