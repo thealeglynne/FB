@@ -1,39 +1,69 @@
-'use client';
-import { useEffect, useState } from "react";
+"use client";
+import { useEffect, useState, useRef } from "react";
+import JsonBinCRUD from "./PanelAnalista";
+import EstadoTareasPanel from '../analista/chartnalista';
 
-const BIN_ID_TAREAS = 'T683473998561e97a501bb4f1';
+// Toast visual, idéntico al del ejemplo
+function Toast({ show, message, type = "info", onClose }) {
+  if (!show) return null;
+  let color = "bg-green-600";
+  if (type === "error") color = "bg-red-700";
+  if (type === "info") color = "bg-blue-700";
+  if (type === "warn") color = "bg-yellow-600 text-black";
+  return (
+    <div
+      className={`
+        fixed top-4 right-4 z-[100] min-w-[220px] max-w-xs sm:min-w-[250px] sm:max-w-xs px-3 py-3 sm:px-5 sm:py-4 rounded-2xl shadow-lg flex items-center gap-2 sm:gap-3 text-white animate-fade-in
+        ${color}
+      `}
+      style={{ animation: "fadeIn .3s" }}
+    >
+      <span className="font-semibold text-xs sm:text-base">{message}</span>
+      <button
+        className="ml-auto text-white hover:text-black/80 transition text-xl"
+        onClick={onClose}
+        aria-label="Cerrar alerta"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+const toastFadeIn = `
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-16px);} to { opacity: 1; transform: none; } }
+.animate-fade-in { animation: fadeIn 0.3s; }
+`;
+
+// --- PanelAnalista (igualado a la estética solicitada) ---
 const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
+const BIN_ID_TAREAS = '683473998561e97a501bb4f1';
 const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
-
-const estadosActividad = ["Pendiente", "En progreso", "Terminado"];
-
-// Normaliza para comparar
-const normalize = (s) =>
-  s
-    ? s.normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase()
-    : "";
 
 export default function PanelAnalista() {
   const [correoUsuario, setCorreoUsuario] = useState(null);
   const [nombreAnalista, setNombreAnalista] = useState(null);
-  const [tareas, setTareas] = useState([]);
-  const [editando, setEditando] = useState({});
   const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+  const [tareasEquipo, setTareasEquipo] = useState([]);
+  const [loadingTareas, setLoadingTareas] = useState(true);
 
-  // 1. Cargar correo y nombre SOLO en cliente
+  // Toast
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+  const toastTimeout = useRef(null);
+  const showToast = (message, type = 'info') => {
+    setToast({ show: true, message, type });
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setToast({ show: false, message: '', type }), 2500);
+  };
+
+  // Cargar usuario desde localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCorreoUsuario(localStorage.getItem("correo_usuario"));
     }
   }, []);
 
-  // 2. Busca SIEMPRE el nombre más actualizado desde BIN, por correo
+  // Busca SIEMPRE el nombre actualizado en el bin por correo (no username)
   useEffect(() => {
     if (!correoUsuario) {
       setCargando(false);
@@ -60,208 +90,70 @@ export default function PanelAnalista() {
       .finally(() => setCargando(false));
   }, [correoUsuario]);
 
-  // 3. Cargar tareas SÓLO cuando ya haya nombreAnalista (y no antes)
+  // Carga tareas SOLO de este analista
   useEffect(() => {
-    if (!nombreAnalista) {
-      setTareas([]);
-      setCargando(false);
-      return;
-    }
-    setCargando(true);
+    if (!nombreAnalista) return;
+    setLoadingTareas(true);
     fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}/latest`, {
       headers: { 'X-Access-Key': API_KEY }
     })
       .then(res => res.json())
       .then(res => {
-        let data = Array.isArray(res.record) ? res.record : (res.record ? [res.record] : []);
-        setTareas(
-          data.filter(
-            t => normalize(t.Analista) === normalize(nombreAnalista)
-          )
+        let tareas = Array.isArray(res.record) ? res.record : [];
+        // Filtrar tareas SOLO de este analista
+        const misTareas = tareas.filter(
+          t => t.Analista?.toLowerCase().trim() === nombreAnalista.toLowerCase().trim()
         );
+        setTareasEquipo(misTareas);
       })
-      .finally(() => setCargando(false));
+      .finally(() => setLoadingTareas(false));
   }, [nombreAnalista]);
 
-  // Helpers para editar tareas
-  const handleEdit = (materiaIdx, granuloIdx, actIdx, campo, valor) => {
-    setTareas(prev => {
-      const nuevo = JSON.parse(JSON.stringify(prev));
-      nuevo[materiaIdx].Gránulos[granuloIdx].Actividades[actIdx][campo] = valor;
-      if (campo === "Estado") {
-        if (valor === "En progreso" && !nuevo[materiaIdx].Gránulos[granuloIdx].Actividades[actIdx].Fecha_Inicio) {
-          nuevo[materiaIdx].Gránulos[granuloIdx].Actividades[actIdx].Fecha_Inicio = new Date().toISOString().slice(0,16);
-        }
-        if (valor === "Terminado" && !nuevo[materiaIdx].Gránulos[granuloIdx].Actividades[actIdx].Fecha_Fin) {
-          nuevo[materiaIdx].Gránulos[granuloIdx].Actividades[actIdx].Fecha_Fin = new Date().toISOString().slice(0,16);
-        }
-      }
-      return nuevo;
-    });
-    setEditando({ materiaIdx, granuloIdx, actIdx });
-  };
-
-  const guardarCambios = async () => {
-    setGuardando(true);
-    let todasTareas = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}/latest`, {
-      headers: { 'X-Access-Key': API_KEY }
-    }).then(r => r.json());
-    let data = Array.isArray(todasTareas.record) ? todasTareas.record : (todasTareas.record ? [todasTareas.record] : []);
-    const otrasTareas = data.filter(
-      t => normalize(t.Analista) !== normalize(nombreAnalista)
-    );
-    const nuevasTareas = [...otrasTareas, ...tareas];
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Key': API_KEY,
-        'X-Bin-Versioning': 'false'
-      },
-      body: JSON.stringify(nuevasTareas)
-    });
-    setGuardando(false);
-    setToast({ show: true, message: "¡Cambios guardados correctamente!", type: "success" });
-    setTimeout(() => setToast({ show: false, message: "" }), 2500);
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-gray-950 to-blue-950 text-white py-6 px-2">
-      <div className="max-w-5xl mx-auto">
+    <div className="px-2 py-4 sm:p-8 w-full space-y-8 sm:space-y-12 bg-black min-h-screen text-white">
+      <style>{toastFadeIn}</style>
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
+      {/* Tarjeta del analista */}
+      <div className="w-full max-w-2xl mx-auto rounded-2xl bg-blue-950/80 border border-blue-800 shadow-xl p-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-black mb-5 text-blue-400">Panel del Analista</h1>
-        <div className="bg-blue-950/80 border border-blue-800 rounded-xl shadow-xl p-4 mb-5">
-          <b className="text-lg text-blue-200">Analista: </b>
-          <span>{nombreAnalista ? nombreAnalista : 'No identificado'}</span>
-        </div>
         {!correoUsuario && (
-          <div className="p-6 text-center text-lg text-red-400">
+          <div className="p-6 text-lg text-red-400">
             No se detectó sesión de usuario. Por favor, inicia sesión.
           </div>
         )}
         {cargando ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-400 border-b-4 border-violet-500 mr-4" />
-            <span className="text-blue-200 text-lg">Cargando tareas...</span>
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-400 border-b-4 border-violet-500"></div>
+            <span className="text-blue-200 text-lg">Cargando usuario...</span>
           </div>
         ) : !nombreAnalista ? (
-          <div className="p-6 text-center text-lg text-yellow-400">
+          <div className="p-6 text-lg text-yellow-400">
             Usuario no encontrado en la base de usuarios.
           </div>
-        ) : tareas.length === 0 ? (
-          <div className="p-6 text-center text-lg text-yellow-400">
-            No tienes materias asignadas actualmente.
-          </div>
         ) : (
-          tareas.map((mat, materiaIdx) => (
-            <div key={materiaIdx} className="mb-10 bg-gradient-to-tr from-gray-900 to-gray-800/70 border border-blue-900 rounded-xl shadow-lg">
-              <div className="p-4 border-b border-blue-900 flex flex-col md:flex-row md:items-center md:justify-between">
-                <div>
-                  <div className="text-lg sm:text-xl font-bold text-blue-200">{mat.Materia}</div>
-                  <div className="text-xs text-blue-300">{mat.Escuela}</div>
-                </div>
-                <div className="mt-2 md:mt-0 text-xs text-gray-400">
-                  <b>Fecha asignación:</b> {mat.Fecha_Asignacion || '-'}
-                </div>
-              </div>
-              {/* Gránulos */}
-              <div className="overflow-x-auto p-3">
-                {mat.Gránulos.map((g, granuloIdx) => (
-                  <div key={granuloIdx} className="mb-8">
-                    <div className="font-semibold text-blue-400 mb-2">{g.Nombre_Granulo}</div>
-                    <table className="w-full min-w-[800px] text-xs sm:text-sm border-separate border-spacing-0 shadow rounded-2xl overflow-hidden">
-                      <thead className="bg-blue-900/80 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-2 py-2 text-blue-200">Actividad</th>
-                          <th className="px-2 py-2 text-blue-200">Estado</th>
-                          <th className="px-2 py-2 text-blue-200">Tiempo Ideal</th>
-                          <th className="px-2 py-2 text-blue-200">Tiempo Real (min)</th>
-                          <th className="px-2 py-2 text-blue-200">Fecha Inicio</th>
-                          <th className="px-2 py-2 text-blue-200">Fecha Fin</th>
-                          <th className="px-2 py-2 text-blue-200">Observaciones</th>
-                          <th className="px-2 py-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {g.Actividades.map((act, actIdx) => {
-                          const isEditing = editando.materiaIdx === materiaIdx && editando.granuloIdx === granuloIdx && editando.actIdx === actIdx;
-                          return (
-                            <tr key={actIdx} className="bg-gray-950/90 border-b border-blue-900 hover:bg-blue-950/60 transition">
-                              <td className="px-2 py-1 font-semibold text-blue-300">{act.Tipo}</td>
-                              <td className="px-2 py-1">
-                                <select
-                                  className={`rounded-lg px-1 py-1 text-xs bg-blue-900 border border-blue-700 text-blue-100 outline-none
-                                    ${act.Estado === "Terminado" ? "bg-green-900 text-green-200" : act.Estado === "En progreso" ? "bg-yellow-900 text-yellow-200" : ""}
-                                  `}
-                                  value={act.Estado}
-                                  onChange={e => handleEdit(materiaIdx, granuloIdx, actIdx, "Estado", e.target.value)}
-                                >
-                                  {estadosActividad.map(est => <option key={est} value={est}>{est}</option>)}
-                                </select>
-                              </td>
-                              <td className="px-2 py-1 text-cyan-300 text-center">{act.Tiempo_Ideal_Min}</td>
-                              <td className="px-2 py-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  className="w-16 rounded bg-gray-900 border border-blue-700 text-blue-100 px-1 py-1"
-                                  value={act.Tiempo_Real_Min || ""}
-                                  placeholder="min"
-                                  onChange={e => handleEdit(materiaIdx, granuloIdx, actIdx, "Tiempo_Real_Min", e.target.value)}
-                                />
-                              </td>
-                              <td className="px-2 py-1">
-                                <input
-                                  type="datetime-local"
-                                  className="rounded bg-gray-900 border border-blue-700 text-blue-100 px-1 py-1"
-                                  value={act.Fecha_Inicio || ""}
-                                  onChange={e => handleEdit(materiaIdx, granuloIdx, actIdx, "Fecha_Inicio", e.target.value)}
-                                />
-                              </td>
-                              <td className="px-2 py-1">
-                                <input
-                                  type="datetime-local"
-                                  className="rounded bg-gray-900 border border-blue-700 text-blue-100 px-1 py-1"
-                                  value={act.Fecha_Fin || ""}
-                                  onChange={e => handleEdit(materiaIdx, granuloIdx, actIdx, "Fecha_Fin", e.target.value)}
-                                />
-                              </td>
-                              <td className="px-2 py-1">
-                                <input
-                                  type="text"
-                                  className="w-28 rounded bg-gray-900 border border-blue-700 text-blue-100 px-1 py-1"
-                                  value={act.Observaciones || ""}
-                                  placeholder="Observaciones"
-                                  onChange={e => handleEdit(materiaIdx, granuloIdx, actIdx, "Observaciones", e.target.value)}
-                                />
-                              </td>
-                              <td className="px-2 py-1 text-center">
-                                {isEditing && (
-                                  <button
-                                    className={`bg-blue-700 hover:bg-blue-800 text-white font-bold px-3 py-1 rounded-xl shadow transition disabled:opacity-60`}
-                                    disabled={guardando}
-                                    onClick={guardarCambios}
-                                    title="Guardar cambios"
-                                  >
-                                    {guardando ? "..." : "💾"}
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
+          <div>
+            <div className="text-xl font-bold text-blue-200 mb-4">
+              ¡Hola, {nombreAnalista}!
             </div>
-          ))
-        )}
-        {toast.show && (
-          <div className={`fixed top-6 right-6 z-[9999] px-4 py-3 rounded-xl text-white font-semibold shadow-lg bg-green-700`}>
-            {toast.message}
+            <div className="text-base text-blue-100 mb-6">Bienvenido(a) a tu panel.</div>
+            {loadingTareas ? (
+              <div className="text-blue-300">Cargando tus tareas...</div>
+            ) : null}
           </div>
         )}
+      </div>
+      {/* CRUD de tareas del analista (Tarjeta oscura y tabla igualada) */}
+      <div className="w-full max-w-5xl mx-auto">
+        <JsonBinCRUD nombreAnalista={nombreAnalista} />
+      </div>
+      {/* Estado gráfico y tabla de tareas (misma caja, mismo look) */}
+      <div className="w-full max-w-5xl mx-auto">
+        <EstadoTareasPanel tareasEquipo={tareasEquipo} />
       </div>
     </div>
   );

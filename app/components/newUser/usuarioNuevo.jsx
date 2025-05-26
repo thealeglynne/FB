@@ -53,7 +53,7 @@ export default function CrearUsuarioPanel() {
     setForm(f => ({
       ...f,
       username,
-      correo: `${username}@tudominio.com` // cámbialo por tu dominio real si quieres
+      correo: `${username}@tcun.edu.co` // cámbialo por tu dominio real si quieres
     }));
   }, [form.nombreCompleto]);
 
@@ -102,6 +102,28 @@ export default function CrearUsuarioPanel() {
     }
   }
 
+  // Eliminar usuario
+  async function eliminarUsuario(username) {
+    if (!window.confirm("¿Seguro que deseas eliminar este usuario?")) return;
+    const nuevosUsuarios = usuarios.filter(u => u.username !== username);
+    setMensaje('Eliminando...');
+    try {
+      await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Access-Key': API_KEY,
+          'X-Bin-Versioning': 'false'
+        },
+        body: JSON.stringify(nuevosUsuarios)
+      });
+      setUsuarios(nuevosUsuarios);
+      setMensaje('Usuario eliminado con éxito');
+    } catch (err) {
+      setMensaje('Error al eliminar usuario');
+    }
+  }
+
   return (
     <div>
       <button
@@ -129,8 +151,9 @@ export default function CrearUsuarioPanel() {
                 <th className="px-2 py-1 text-cyan-400">Correo</th>
                 <th className="px-2 py-1 text-cyan-400">Rol</th>
                 <th className="px-2 py-1 text-cyan-400">Equipo</th>
-                <th className="px-2 py-1 text-cyan-400">#Tareas</th>
+              
                 <th className="px-2 py-1 text-cyan-400">Creado</th>
+                <th className="px-2 py-1 text-red-400">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -141,8 +164,17 @@ export default function CrearUsuarioPanel() {
                   <td className="px-2 py-1 text-gray-300">{u.correo}</td>
                   <td className="px-2 py-1 text-cyan-400">{u.rol}</td>
                   <td className="px-2 py-1 text-cyan-400">{u.equipo}</td>
-                  <td className="px-2 py-1 text-green-300">{u.tareasAsignadas?.length ?? 0}</td>
+             
                   <td className="px-2 py-1 text-gray-400">{u.creadoEn ? u.creadoEn.split('T')[0] : ''}</td>
+                  <td className="px-2 py-1 text-center">
+                    <button
+                      onClick={() => eliminarUsuario(u.username)}
+                      className="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-900 text-xs"
+                      title="Eliminar usuario"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
