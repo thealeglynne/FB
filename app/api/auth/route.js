@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 // Gerente hardcodeada
 const USERS = [
   { username: 'gerente', password: '1234', role: 'gerencia' },
+  { username: 'lider', password: '1234', role: 'lider' }
 ];
 
 // Configuración JSONbin
