@@ -11,14 +11,23 @@ export default function LoginModal() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     const res = await fetch('/api/auth', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
+      headers: { 'Content-Type': 'application/json' }
     });
 
     if (res.ok) {
-      const { role } = await res.json();
-      switch (role) {
+      // Espera la estructura: { role, nombreCompleto, correo, ... }
+      const data = await res.json();
+      // Guarda en localStorage lo necesario
+      if (data.correo) localStorage.setItem('correo_usuario', data.correo);
+      if (data.nombreCompleto) localStorage.setItem('nombre_usuario', data.nombreCompleto);
+      if (data.role) localStorage.setItem('rol_usuario', data.role);
+
+      // Redirige según rol
+      switch (data.role) {
         case 'gerencia':
           router.push('/gerencia');
           break;
@@ -57,7 +66,7 @@ export default function LoginModal() {
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-gray-900 p-6 rounded-2xl shadow-lg max-w-sm sm:max-w-md w-full" 
+            className="bg-gray-900 p-6 rounded-2xl shadow-lg max-w-sm sm:max-w-md w-full relative" 
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -75,6 +84,7 @@ export default function LoginModal() {
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 placeholder="Usuario"
+                required
               />
               <input
                 className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg p-3 mb-4 text-sm sm:text-base"
@@ -82,6 +92,7 @@ export default function LoginModal() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Contraseña"
+                required
               />
               <button 
                 type="submit"
@@ -89,7 +100,7 @@ export default function LoginModal() {
               >
                 Entrar
               </button>
-              {error && <p className="text-red-500 text-xs sm:text-sm text-center">{error}</p>}
+              {error && <p className="text-red-500 text-xs sm:text-sm text-center mt-2">{error}</p>}
             </form>
           </div>
         </div>

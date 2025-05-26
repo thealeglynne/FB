@@ -1,255 +1,356 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import GraphicsLider from '../vistaPaneelLiderGerencia/panelGraficasLiderGerencia';
-import VisualEquipos from '../VisualizadorIntegrantesEquipo/VisualizadorIntegrantesEquipo'
-const datos = {
-  equipos: ['ALFA','GAMA','DELTA','SIGMA','LAMDA','OMGA']
-};
+import { useState, useEffect, useMemo } from 'react';
+import LiderChart from '../../lider/chrtLider'
 
 const BIN_ID_CURSOS = '682f27e08960c979a59f5afe';
-const BIN_ID_TAREAS = '682f89858a456b7966a3e42c';
-const API_KEY_ACCESS = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
+const BIN_ID_TAREAS = 'T683473998561e97a501bb4f1';
+const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
+const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
 
-const buttonGlowStyle = `
-  .btn-glow {
-    position: relative;
-    overflow: hidden;
-  }
-  .btn-glow::after {
-    content: "";
-    position: absolute;
-    left: -75%;
-    top: 0;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
-    transform: skewX(-20deg);
-    transition: left 0.6s;
-    pointer-events: none;
-  }
-  .btn-glow:hover::after {
-    left: 120%;
-  }
-`;
+const N_GRANULOS = 5;
+const GRANULOS_NOMBRES = ["Tema 1", "Tema 2", "Tema 3", "Tema 4", "Tema 5"];
+const ACTIVIDADES = [
+  { Tipo: "Video educativo", Tiempo_Ideal_Min: 20 },
+  { Tipo: "Podcast (temática)", Tiempo_Ideal_Min: 15 },
+  { Tipo: "Infografía", Tiempo_Ideal_Min: 210 },
+  { Tipo: "Imágenes y personajes", Tiempo_Ideal_Min: 15 },
+  { Tipo: "Actividades en iSpring", Tiempo_Ideal_Min: 25 },
+  { Tipo: "Prevalidación", Tiempo_Ideal_Min: 12.5 },
+  { Tipo: "Subida de SCORM a Drive", Tiempo_Ideal_Min: 30 },
+  { Tipo: "Validación final a Moodle", Tiempo_Ideal_Min: 30 }
+];
+const EQUIPOS = ['ALFA', 'GAMA', 'DELTA', 'SIGMA', 'LAMDA', 'OMGA', 'KAPPA', 'THETA'];
 
-export default function SistemaGestionTareas() {
+export default function PanelLider2() {
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState('');
+  const [cargando, setCargando] = useState(true);
   const [cursos, setCursos] = useState([]);
   const [tareas, setTareas] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState('');  // Inicial vacío para seleccionar
-  const [cursoSeleccionado, setCursoSeleccionado] = useState('');
+  const [usuarios, setUsuarios] = useState([]);
+  const [asignando, setAsignando] = useState(false);
 
-  const cargarDatos = useCallback(async () => {
+  // Filtros
+  const [filtroMateria, setFiltroMateria] = useState('');
+  const [filtroAnalista, setFiltroAnalista] = useState('');
+  const [filtroEscuela, setFiltroEscuela] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+
+  useEffect(() => {
     setCargando(true);
-    try {
-      const resCursos = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, {
-        headers: { 'X-Access-Key': API_KEY_ACCESS }
-      });
-      const dataCursos = await resCursos.json();
-      const cursosData = Array.isArray(dataCursos.record) ? dataCursos.record : [];
-
-      const resTareas = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
-        headers: { 'X-Access-Key': API_KEY_ACCESS }
-      });
-      const dataTareas = await resTareas.json();
-      const tareasData = Array.isArray(dataTareas.record) ? dataTareas.record : [];
-
-      // Asignar equipos a cursos sin asignar (como antes)
-      let cursosActualizados = [...cursosData];
-      const cursosSinAsignar = cursosData.filter(c => !c.asignado_a);
-      if (cursosSinAsignar.length > 0) {
-        const conteoEquipos = datos.equipos.map(equipo => ({
-          equipo,
-          count: cursosData.filter(c => c.asignado_a === equipo).length
-        })).sort((a, b) => a.count - b.count);
-
-        let equipoIndex = 0;
-        cursosSinAsignar.forEach(curso => {
-          const equipo = conteoEquipos[equipoIndex % conteoEquipos.length].equipo;
-          cursosActualizados = cursosActualizados.map(c =>
-            c.ID_Programa === curso.ID_Programa && c['Nombre del Programa'] === curso['Nombre del Programa']
-              ? { ...c, asignado_a: equipo }
-              : c
-          );
-          equipoIndex++;
-        });
-
-        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Access-Key': API_KEY_ACCESS,
-            'X-Bin-Versioning': 'false'
-          },
-          body: JSON.stringify(cursosActualizados)
-        });
-      }
-
-      setCursos(cursosActualizados);
-      setTareas(tareasData);
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-    } finally {
-      setCargando(false);
-    }
+    Promise.all([
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_CURSOS}`, { headers: { 'X-Access-Key': API_KEY } }),
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, { headers: { 'X-Access-Key': API_KEY } }),
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_USUARIOS}`, { headers: { 'X-Access-Key': API_KEY } })
+    ])
+      .then(async ([resCursos, resTareas, resUsuarios]) => {
+        const cursos = await resCursos.json();
+        const tareas = await resTareas.json();
+        const usuarios = await resUsuarios.json();
+        setCursos(Array.isArray(cursos.record) ? cursos.record : []);
+        setTareas(Array.isArray(tareas.record) ? tareas.record : []);
+        setUsuarios(Array.isArray(usuarios.record) ? usuarios.record : []);
+      })
+      .finally(() => setCargando(false));
   }, []);
 
   useEffect(() => {
-    cargarDatos();
-    const intervalo = setInterval(() => {
-      cargarDatos();
-    }, 300000);
-    return () => clearInterval(intervalo);
-  }, [cargarDatos]);
+    if (!equipoSeleccionado || cargando) return;
+    async function asignarMaterias() {
+      setAsignando(true);
+      let nuevasTareas = [...tareas];
+      let hayCambios = false;
+      const materiasEquipo = cursos.filter(c => c.asignado_a === equipoSeleccionado);
+      const analistas = usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado);
+      if (!analistas.length) return setAsignando(false);
 
-  // Filtrar cursos y tareas según equipo seleccionado
-  const cursosFiltrados = equipoSeleccionado
-    ? cursos.filter(curso => curso.asignado_a === equipoSeleccionado)
-    : [];
+      materiasEquipo.forEach((curso) => {
+        const yaAsignada = nuevasTareas.some(
+          t => t.Equipo === equipoSeleccionado && t.Materia === curso['Nombre del Programa']
+        );
+        if (yaAsignada) return;
 
-  const tareasFiltradas = equipoSeleccionado
-    ? tareas.filter(tarea => tarea.Equipo === equipoSeleccionado)
-    : [];
+        const materiasPorAnalista = {};
+        analistas.forEach(a => {
+          materiasPorAnalista[a.nombreCompleto] = nuevasTareas.filter(
+            t => t.Analista === a.nombreCompleto && t.Equipo === equipoSeleccionado
+          ).length;
+        });
+        const analistaAsignado = analistas.reduce((minA, currA) =>
+          materiasPorAnalista[currA.nombreCompleto] < materiasPorAnalista[minA.nombreCompleto]
+            ? currA : minA, analistas[0]
+        );
+        nuevasTareas.push({
+          Analista: analistaAsignado.nombreCompleto,
+          Equipo: equipoSeleccionado,
+          Materia: curso['Nombre del Programa'],
+          Escuela: curso['Escuela'],
+          Fecha_Asignacion: new Date().toISOString().split('T')[0],
+          Observaciones: "",
+          Gránulos: GRANULOS_NOMBRES.map((nombre, i) => ({
+            ID_Granulo: i + 1,
+            Nombre_Granulo: nombre,
+            Actividades: ACTIVIDADES.map(act => ({
+              Tipo: act.Tipo,
+              Fecha_Asignacion: new Date().toISOString().split('T')[0],
+              Fecha_Inicio: "",
+              Fecha_Fin: "",
+              Tiempo_Ideal_Min: act.Tiempo_Ideal_Min,
+              Tiempo_Real_Min: "",
+              Estado: "Pendiente",
+              Observaciones: ""
+            }))
+          }))
+        });
+        hayCambios = true;
+      });
 
-  const infoCursoSeleccionado = cursosFiltrados.find(c => c['Nombre del Programa'] === cursoSeleccionado);
+      if (hayCambios) {
+        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Access-Key': API_KEY,
+            'X-Bin-Versioning': 'false'
+          },
+          body: JSON.stringify(nuevasTareas)
+        });
+        setTareas(nuevasTareas);
+      }
+      setAsignando(false);
+    }
+    asignarMaterias();
+  }, [equipoSeleccionado, cursos, tareas, usuarios, cargando]);
+
+  const analistasEquipo = useMemo(() =>
+    usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado),
+    [usuarios, equipoSeleccionado]
+  );
+  const tareasEquipo = useMemo(() =>
+    tareas.filter(t => t.Equipo === equipoSeleccionado),
+    [tareas, equipoSeleccionado]
+  );
+
+  // --------- Filtros dinámicos -------------
+  const materiasUnicas = [...new Set(tareasEquipo.map(t => t.Materia))];
+  const analistasUnicos = [...new Set(tareasEquipo.map(t => t.Analista))];
+  const escuelasUnicas = [...new Set(tareasEquipo.map(t => t.Escuela))];
+
+  // Para filtrar actividades dentro de las tareas
+  const tareasFiltradas = useMemo(() => {
+    return tareasEquipo
+      .filter(t =>
+        (!filtroMateria || t.Materia === filtroMateria) &&
+        (!filtroAnalista || t.Analista === filtroAnalista) &&
+        (!filtroEscuela || t.Escuela === filtroEscuela)
+      );
+  }, [tareasEquipo, filtroMateria, filtroAnalista, filtroEscuela]);
+
+  // Helper para filtrar estado a nivel actividad
+  const actividadesFiltradas = (granulos) => {
+    return granulos.map(g => ({
+      ...g,
+      Actividades: g.Actividades.filter(a => !filtroEstado || a.Estado === filtroEstado)
+    })).filter(g => g.Actividades.length > 0);
+  };
 
   if (cargando) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-500 mb-4"></div>
-          <p className="text-lg">Cargando y distribuyendo materias...</p>
+        <div>
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-cyan-500 mb-4"></div>
+          <p className="text-lg">Cargando información...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <style>{buttonGlowStyle}</style>
+    <div className="min-h-screen bg-black text-white p-2 sm:p-4">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10">
 
-      {/* FILTRO POR EQUIPO */}
-      <div className="mb-6 max-w-sm">
-        <label className="block mb-2 font-semibold text-white" htmlFor="equipoSelect">
-          Filtrar por Equipo
-        </label>
-        <select
-          id="equipoSelect"
-          value={equipoSeleccionado}
-          onChange={e => {
-            setEquipoSeleccionado(e.target.value);
-            setCursoSeleccionado(''); // limpiar selección curso al cambiar equipo
-          }}
-          className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-green-500"
-        >
-          <option value="">-- Selecciona un equipo --</option>
-          {datos.equipos.map(eq => (
-            <option key={eq} value={eq}>{eq}</option>
-          ))}
-        </select>
-      </div>
-      <VisualEquipos equipo={equipoSeleccionado} tareas={tareas} />
+        {/* SELECCIÓN DE EQUIPO */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-4 flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold mb-2 text-cyan-400">Panel de Líder</h1>
+            <label className="block text-base mb-1">Selecciona tu equipo:</label>
+            <select
+              value={equipoSeleccionado}
+              onChange={e => setEquipoSeleccionado(e.target.value)}
+              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500 transition"
+            >
+              <option value="">-- Selecciona un equipo --</option>
+              {EQUIPOS.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+            </select>
+            {asignando && <div className="text-yellow-400 mt-2">Asignando materias automáticamente...</div>}
+          </div>
+        </div>
 
-      {/* NUEVA SECCIÓN: FILTRAR POR CURSO */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">Filtrar por Curso</h2>
-        {cursosFiltrados.length === 0 ? (
-          <p className="text-gray-400">No hay cursos asignados para este equipo.</p>
-        ) : (
-          <select
-            className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-green-500"
-            value={cursoSeleccionado}
-            onChange={e => setCursoSeleccionado(e.target.value)}
+        {/* INTEGRANTES DEL EQUIPO */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Analistas del equipo</h2>
+          {analistasEquipo.length === 0 ? (
+            <div className="text-gray-400">No hay analistas registrados en este equipo.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm mb-2">
+                <thead>
+                  <tr>
+                    <th className="text-left px-3 py-2 text-cyan-400">Nombre</th>
+                    <th className="text-left px-3 py-2 text-cyan-400">Correo</th>
+                    <th className="text-left px-3 py-2 text-cyan-400"># Materias</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analistasEquipo.map((a, i) => (
+                    <tr key={i} className="hover:bg-gray-800 transition">
+                      <td className="px-3 py-2">{a.nombreCompleto}</td>
+                      <td className="px-3 py-2">{a.correo}</td>
+                      <td className="px-3 py-2 text-green-300 font-bold text-center">
+                        {tareasEquipo.filter(t => t.Analista === a.nombreCompleto).length}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <LiderChart tareasEquipo={tareasEquipo} analistasEquipo={analistasEquipo} />
+
+
+        {/* FILTROS AVANZADOS */}
+        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex flex-col sm:flex-row flex-wrap gap-4">
+          <div>
+            <label className="text-cyan-300 text-xs">Materia:</label>
+            <select
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+              value={filtroMateria}
+              onChange={e => setFiltroMateria(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {materiasUnicas.map((mat, idx) => (
+                <option key={idx} value={mat}>{mat}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-cyan-300 text-xs">Analista:</label>
+            <select
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+              value={filtroAnalista}
+              onChange={e => setFiltroAnalista(e.target.value)}
+            >
+              <option value="">Todos</option>
+              {analistasUnicos.map((an, idx) => (
+                <option key={idx} value={an}>{an}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-cyan-300 text-xs">Escuela:</label>
+            <select
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+              value={filtroEscuela}
+              onChange={e => setFiltroEscuela(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {escuelasUnicas.map((esc, idx) => (
+                <option key={idx} value={esc}>{esc}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-cyan-300 text-xs">Estado actividad:</label>
+            <select
+              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value)}
+            >
+              <option value="">Todos</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En progreso">En progreso</option>
+              <option value="Terminado">Terminado</option>
+            </select>
+          </div>
+          <button
+            className="px-3 py-2 mt-4 sm:mt-0 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+            onClick={() => {
+              setFiltroMateria('');
+              setFiltroAnalista('');
+              setFiltroEscuela('');
+              setFiltroEstado('');
+            }}
           >
-            <option value="">-- Selecciona un curso --</option>
-            {cursosFiltrados.map((curso, idx) => (
-              <option key={`${curso.ID_Programa}-${idx}`} value={curso['Nombre del Programa']}>
-                {curso['Nombre del Programa']}
-              </option>
-            ))}
-          </select>
-        )}
+            Limpiar Filtros
+          </button>
+        </div>
 
-        {cursoSeleccionado && infoCursoSeleccionado && (
-          <div className="mt-4 bg-gray-800 p-4 rounded-lg text-white">
-            <h3 className="text-lg font-semibold mb-2">Detalles del Curso</h3>
-            <p><strong>Programa:</strong> {infoCursoSeleccionado['Nombre del Programa']}</p>
-            <p><strong>Escuela:</strong> {infoCursoSeleccionado['Escuela'] || 'No disponible'}</p>
-            <p><strong>Equipo Asignado:</strong> {infoCursoSeleccionado.asignado_a || 'No asignado'}</p>
+        {/* MATERIAS Y GRÁNULOS (FILTRADAS) */}
+<div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
+  <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Materias y estado de gránulos</h2>
+  {tareasFiltradas.length === 0 ? (
+    <div className="text-gray-400">No hay materias asignadas con esos filtros.</div>
+  ) : (
+    <div className="overflow-auto max-h-[65vh]">
+      {tareasFiltradas.map((mat, idx) => (
+        <div key={idx} className="mb-8">
+          <h3 className="font-semibold text-cyan-200 text-base mb-2">
+            {mat.Materia}
+            <span className="ml-2 px-2 py-1 bg-cyan-800 text-white text-xs rounded-full">{mat.Escuela}</span>
+            <span className="ml-2 px-2 py-1 bg-cyan-700 text-white text-xs rounded-full">{mat.Analista}</span>
+          </h3>
+          <div className="mb-2 text-sm text-gray-400">
+            <b>Fecha de asignación:</b> {mat.Fecha_Asignacion || '-'} &nbsp; | &nbsp;
+            <b>Observaciones:</b> {mat.Observaciones || '-'}
           </div>
-        )}
-      </div>
-
-      {/* Tabla Cursos Asignados */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
-          Cursos Asignados {equipoSeleccionado && `(Equipo ${equipoSeleccionado})`}
-        </h2>
-        {cursosFiltrados.length === 0 ? (
-          <p className="text-gray-400">No hay cursos asignados para este equipo.</p>
-        ) : (
-          <div className="overflow-auto max-h-[70vh] max-w-full border border-gray-700 rounded-xl">
-            <table className="min-w-max w-full text-sm border-separate border-spacing-0">
+          <div className="overflow-x-auto rounded-lg border border-gray-800">
+            <table className="min-w-max w-full text-xs sm:text-sm mb-2 border-separate border-spacing-0">
               <thead className="bg-gray-800 sticky top-0 z-10">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Programa</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Escuela</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Equipo Asignado</th>
+                  <th className="px-3 py-2 text-cyan-400">Gránulo</th>
+                  <th className="px-3 py-2 text-cyan-400">Actividad</th>
+                  <th className="px-3 py-2 text-cyan-400">Estado</th>
+                  <th className="px-3 py-2 text-cyan-400">Fecha Asignación</th>
+                  <th className="px-3 py-2 text-cyan-400">Fecha Inicio</th>
+                  <th className="px-3 py-2 text-cyan-400">Fecha Fin</th>
+                  <th className="px-3 py-2 text-cyan-400">Tiempo Ideal</th>
+                  <th className="px-3 py-2 text-cyan-400">Tiempo Real</th>
+                  <th className="px-3 py-2 text-cyan-400">Observaciones</th>
                 </tr>
               </thead>
               <tbody className="bg-gray-900">
-                {cursosFiltrados.map((curso, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800 transition group">
-                    <td className="px-4 py-3 whitespace-nowrap font-medium text-white border-b border-gray-800 group-last:border-b-0">
-                      {curso['Nombre del Programa']}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 border-b border-gray-800 group-last:border-b-0">
-                      {curso['Escuela']}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-gray-400 border-b border-gray-800 group-last:border-b-0">
-                      {curso.asignado_a || 'No asignado'}
-                    </td>
-                  </tr>
-                ))}
+                {actividadesFiltradas(mat.Gránulos).map((g, idxG) =>
+                  g.Actividades.map((act, idxA) => (
+                    <tr key={`${idxG}-${idxA}`} className="hover:bg-gray-800 transition group">
+                      <td className="px-3 py-2 font-semibold text-cyan-200">{g.Nombre_Granulo}</td>
+                      <td className="px-3 py-2 text-white">{act.Tipo}</td>
+                      <td className={`px-3 py-2 font-bold text-center rounded-lg ${
+                        act.Estado === 'Terminado'
+                          ? 'bg-green-700 text-white'
+                          : act.Estado === 'En progreso'
+                          ? 'bg-yellow-600 text-black'
+                          : 'bg-gray-800 text-gray-200'
+                      }`}>
+                        {act.Estado || 'Pendiente'}
+                      </td>
+                      <td className="px-3 py-2 text-green-200">{act.Fecha_Asignacion || '-'}</td>
+                      <td className="px-3 py-2 text-cyan-200">{act.Fecha_Inicio || '-'}</td>
+                      <td className="px-3 py-2 text-cyan-200">{act.Fecha_Fin || '-'}</td>
+                      <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Ideal_Min}</td>
+                      <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Real_Min || '-'}</td>
+                      <td className="px-3 py-2 text-gray-300">{act.Observaciones || '-'}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
-      <GraphicsLider cursos={cursosFiltrados} tareas={tareasFiltradas} />
-
-      {/* Tabla Tareas Registradas */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
-          Tareas Registradas {equipoSeleccionado && `(Equipo ${equipoSeleccionado})`}
-        </h2>
-        {tareasFiltradas.length === 0 ? (
-          <p className="text-gray-400">No hay tareas registradas para este equipo.</p>
-        ) : (
-          <div className="overflow-auto max-h-[70vh] max-w-full border border-gray-700 rounded-xl">
-            <table className="min-w-max w-full text-sm border-separate border-spacing-0">
-              <thead className="bg-gray-800 sticky top-0 z-10">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Equipo</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Materia</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">ID Gránulo</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">Fecha Asignación</th>
-                </tr>
-              </thead>
-              <tbody className="bg-gray-900">
-                {tareasFiltradas.map((tarea, idx) => (
-                  <tr key={idx} className="hover:bg-gray-800 transition group">
-                    <td className="px-4 py-3 whitespace-nowrap font-medium text-white border-b border-gray-800">{tarea.Equipo}</td>
-                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Materia}</td>
-                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.ID_Granulo}</td>
-                    <td className="px-4 py-3 text-gray-400 border-b border-gray-800">{tarea.Fecha_Asignacion}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
