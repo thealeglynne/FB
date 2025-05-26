@@ -35,7 +35,6 @@ const toastFadeIn = `
 .animate-fade-in { animation: fadeIn 0.3s; }
 `;
 
-// --- PanelAnalista (igualado a la estética solicitada) ---
 const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
 const BIN_ID_TAREAS = '683473998561e97a501bb4f1';
 const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
@@ -102,7 +101,7 @@ export default function PanelAnalista() {
         let tareas = Array.isArray(res.record) ? res.record : [];
         // Filtrar tareas SOLO de este analista
         const misTareas = tareas.filter(
-          t => t.Analista?.toLowerCase().trim() === nombreAnalista.toLowerCase().trim()
+          t => t.Analista?.toLowerCase().trim() === nombreAnalista?.toLowerCase().trim()
         );
         setTareasEquipo(misTareas);
       })
@@ -110,7 +109,7 @@ export default function PanelAnalista() {
   }, [nombreAnalista]);
 
   return (
-    <div className="px-2 py-4 sm:p-8 w-full space-y-8 sm:space-y-12 bg-black min-h-screen text-white">
+    <div className="w-full min-h-screen bg-black text-white">
       <style>{toastFadeIn}</style>
       <Toast
         show={toast.show}
@@ -118,43 +117,77 @@ export default function PanelAnalista() {
         type={toast.type}
         onClose={() => setToast({ ...toast, show: false })}
       />
-      {/* Tarjeta del analista */}
-      <div className="w-full max-w-2xl mx-auto rounded-2xl bg-blue-950/80 border border-blue-800 shadow-xl p-6 text-center">
-        <h1 className="text-2xl sm:text-3xl font-black mb-5 text-blue-400">Panel del Analista</h1>
-        {!correoUsuario && (
-          <div className="p-6 text-lg text-red-400">
-            No se detectó sesión de usuario. Por favor, inicia sesión.
-          </div>
-        )}
-        {cargando ? (
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-400 border-b-4 border-violet-500"></div>
-            <span className="text-blue-200 text-lg">Cargando usuario...</span>
-          </div>
-        ) : !nombreAnalista ? (
-          <div className="p-6 text-lg text-yellow-400">
-            Usuario no encontrado en la base de usuarios.
-          </div>
-        ) : (
-          <div>
-            <div className="text-xl font-bold text-blue-200 mb-4">
-              ¡Hola, {nombreAnalista}!
-            </div>
-            <div className="text-base text-blue-100 mb-6">Bienvenido(a) a tu panel.</div>
-            {loadingTareas ? (
-              <div className="text-blue-300">Cargando tus tareas...</div>
-            ) : null}
-          </div>
-        )}
-      </div>
-      {/* CRUD de tareas del analista (Tarjeta oscura y tabla igualada) */}
-      <div className="w-full max-w-5xl mx-auto">
-        <JsonBinCRUD nombreAnalista={nombreAnalista} />
-      </div>
-      {/* Estado gráfico y tabla de tareas (misma caja, mismo look) */}
-      <div className="w-full max-w-5xl mx-auto">
-        <EstadoTareasPanel tareasEquipo={tareasEquipo} />
+      {/* Bienvenida animada igual que MainG */}
+      <main
+        className="relative w-full min-h-[340px] flex flex-col items-center justify-center px-6 py-12 gap-8 text-white"
+        style={{
+          backgroundImage: "url('https://i.pinimg.com/originals/0a/0e/68/0a0e687ae35c4464fb52919de028cc39.gif')",
+          backgroundSize: '100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="absolute inset-0 bg-black/70 z-0"></div>
+        <div className="relative z-10 w-full flex flex-col items-center text-center space-y-6">
+          <h2 className="text-3xl md:text-4xl font-bold whitespace-pre-wrap w-full">
+            <AnimatedTitle nombreAnalista={nombreAnalista} />
+          </h2>
+          <p className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap w-full">
+            <AnimatedParagraph loadingTareas={loadingTareas} />
+          </p>
+        </div>
+      </main>
+      {/* CRUD de tareas del analista */}
+      <div className="px-2 py-4 sm:p-8 w-full space-y-8 sm:space-y-12">
+        <div className="w-full max-w-5xl mx-auto">
+          <JsonBinCRUD nombreAnalista={nombreAnalista} />
+        </div>
+        <div className="w-full max-w-5xl mx-auto">
+          <EstadoTareasPanel tareasEquipo={tareasEquipo} />
+        </div>
       </div>
     </div>
+  );
+}
+
+// ---- Animación tipo MainG (solo saludo y parrafo) ----
+function AnimatedTitle({ nombreAnalista }) {
+  const title = nombreAnalista
+    ? `¡Hola, ${nombreAnalista}!`
+    : "Bienvenido/a al panel de Analista";
+  const [displayedTitle, setDisplayedTitle] = useState('');
+  useEffect(() => {
+    let titleIndex = 0;
+    setDisplayedTitle('');
+    const titleInterval = setInterval(() => {
+      setDisplayedTitle(title.slice(0, titleIndex + 1));
+      titleIndex++;
+      if (titleIndex === title.length) clearInterval(titleInterval);
+    }, 80);
+    return () => clearInterval(titleInterval);
+  }, [nombreAnalista]);
+  return displayedTitle;
+}
+
+function AnimatedParagraph({ loadingTareas }) {
+  const paragraph = `Bienvenido(a) a tu panel.`;
+  const [displayedParagraph, setDisplayedParagraph] = useState('');
+  useEffect(() => {
+    let paraIndex = 0;
+    setDisplayedParagraph('');
+    const paraInterval = setInterval(() => {
+      setDisplayedParagraph(paragraph.slice(0, paraIndex + 1));
+      paraIndex++;
+      if (paraIndex === paragraph.length) clearInterval(paraInterval);
+    }, 30);
+    return () => clearInterval(paraInterval);
+  }, []);
+  return (
+    <>
+      {displayedParagraph}
+      {loadingTareas ? (
+        <div className="text-blue-300 text-base mt-4">Cargando tus tareas...</div>
+      ) : null}
+    </>
   );
 }
