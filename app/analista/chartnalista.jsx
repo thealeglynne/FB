@@ -5,14 +5,12 @@ import { Chart, registerables } from 'chart.js';
 import { useMemo } from "react";
 Chart.register(...registerables);
 
-// Paleta de colores y helpers
+// Paleta CYBER
 const colors = {
-  pendiente: "#fde047",
-  progreso: "#22d3ee",
-  terminado: "#1dc186",
-  fondo: "#20223a",
-  borde: "#23263b",
-  texto: "#e4e9f7",
+  pendiente: "#6A0DAD",   // morado intenso
+  progreso:  "#196463",   // verde azulado oscuro
+  terminado: "#C3E4EC",   // celeste suave
+  texto:     "#C3E4EC"
 };
 
 function contarEstados(actividades) {
@@ -107,15 +105,15 @@ export default function EstadoTareasPanel({ tareasEquipo = [] }) {
         </div>
         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-[#20223a] rounded-xl p-3">
-            <div className="font-bold text-base text-[#fde047] mb-1">Pendiente</div>
+            <div className="font-bold text-base" style={{ color: colors.pendiente, marginBottom: 4 }}>Pendiente</div>
             <div className="text-3xl font-bold">{resumenGlobal.Pendiente}</div>
           </div>
           <div className="bg-[#20223a] rounded-xl p-3">
-            <div className="font-bold text-base text-[#22d3ee] mb-1">En progreso</div>
+            <div className="font-bold text-base" style={{ color: colors.progreso, marginBottom: 4 }}>En progreso</div>
             <div className="text-3xl font-bold">{resumenGlobal["En progreso"]}</div>
           </div>
           <div className="bg-[#20223a] rounded-xl p-3">
-            <div className="font-bold text-base text-[#1dc186] mb-1">Terminado</div>
+            <div className="font-bold text-base" style={{ color: colors.terminado, marginBottom: 4 }}>Terminado</div>
             <div className="text-3xl font-bold">{resumenGlobal.Terminado}</div>
           </div>
         </div>
@@ -143,9 +141,9 @@ export default function EstadoTareasPanel({ tareasEquipo = [] }) {
                 <td className="px-3 py-2">{t.analista}</td>
                 <td className="px-3 py-2">{t.escuela}</td>
                 <td className="px-3 py-2 font-bold">{t.total}</td>
-                <td className="px-3 py-2 text-[#fde047] font-bold">{t.estados.Pendiente}</td>
-                <td className="px-3 py-2 text-[#22d3ee] font-bold">{t.estados["En progreso"]}</td>
-                <td className="px-3 py-2 text-[#1dc186] font-bold">{t.estados.Terminado}</td>
+                <td className="px-3 py-2 font-bold" style={{ color: colors.pendiente }}>{t.estados.Pendiente}</td>
+                <td className="px-3 py-2 font-bold" style={{ color: colors.progreso }}>{t.estados["En progreso"]}</td>
+                <td className="px-3 py-2 font-bold" style={{ color: colors.terminado }}>{t.estados.Terminado}</td>
                 <td className="px-3 py-2">
                   <Doughnut
                     data={{
