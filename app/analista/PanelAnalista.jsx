@@ -43,8 +43,9 @@ const ActividadesTable = ({
   granuloIdx,
   tareaEditable,
 }) => (
-  <div className="w-full overflow-x-auto rounded-lg">
-    <table className="w-full text-xs bg-gray-900 text-slate-200 rounded-lg border border-gray-700 mb-2">
+  // *** Cambia el contenedor de la tabla para tener scroll interno y altura máxima
+  <div className="w-full max-h-[45vh] overflow-y-auto overflow-x-auto rounded-lg border border-gray-700 mb-2 bg-gray-900">
+    <table className="w-full text-xs bg-gray-900 text-slate-200 rounded-lg">
       <thead className="bg-gray-800 sticky top-0 z-10">
         <tr>
           <th className="px-3 py-2 text-slate-200">Tipo</th>
@@ -114,33 +115,36 @@ const GranulosTable = ({
   onTerminarActividad,
   tareaEditable,
 }) => (
-  <div className="w-full overflow-x-auto">
-    <table className="w-full text-xs bg-gray-900 text-slate-200 rounded-lg border border-gray-700 mb-2">
-      <thead className="bg-gray-800 sticky top-0 z-10">
-        <tr>
-          <th className="px-3 py-2 text-slate-200">ID</th>
-          <th className="px-3 py-2 text-slate-200">Nombre</th>
-          <th className="px-3 py-2 text-slate-200">Actividades</th>
-        </tr>
-      </thead>
-      <tbody>
-        {granulos.map((g, idx) => (
-          <tr key={idx} className="align-top hover:bg-gray-800 transition">
-            <td className="px-3 py-2">{g.ID_Granulo}</td>
-            <td className="px-3 py-2 font-bold text-slate-300">{g.Nombre_Granulo}</td>
-            <td className="px-3 py-2">
-              <ActividadesTable
-                actividades={g.Actividades || []}
-                onIniciar={onIniciarActividad}
-                onTerminar={onTerminarActividad}
-                granuloIdx={idx}
-                tareaEditable={tareaEditable}
-              />
-            </td>
+  // También puedes ponerle scroll a la tabla de gránulos si tienes muchas
+  <div className="w-full">
+    <div className="w-full max-h-[30vh] overflow-y-auto overflow-x-auto rounded-lg border border-gray-700 mb-2 bg-gray-900">
+      <table className="w-full text-xs bg-gray-900 text-slate-200 rounded-lg">
+        <thead className="bg-gray-800 sticky top-0 z-10">
+          <tr>
+            <th className="px-3 py-2 text-slate-200">ID</th>
+            <th className="px-3 py-2 text-slate-200">Nombre</th>
+            <th className="px-3 py-2 text-slate-200">Actividades</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {granulos.map((g, idx) => (
+            <tr key={idx} className="align-top hover:bg-gray-800 transition">
+              <td className="px-3 py-2">{g.ID_Granulo}</td>
+              <td className="px-3 py-2 font-bold text-slate-300">{g.Nombre_Granulo}</td>
+              <td className="px-3 py-2">
+                <ActividadesTable
+                  actividades={g.Actividades || []}
+                  onIniciar={onIniciarActividad}
+                  onTerminar={onTerminarActividad}
+                  granuloIdx={idx}
+                  tareaEditable={tareaEditable}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </div>
 );
 
@@ -295,46 +299,49 @@ const JsonBinCRUD = ({ nombreAnalista }) => {
         </div>
 
         <h1 className="text-2xl font-black mb-4 text-slate-200 text-center">Tus tareas asignadas</h1>
-        {filteredData.length === 0 ? (
-          <div className="text-center py-8 text-gray-400 font-bold">
-            No tienes tareas asignadas.
-          </div>
-        ) : (
-          filteredData.map((row, i) => (
-            <div key={i} className="mb-8 w-full">
-              <div className="w-full overflow-x-auto rounded-lg mb-2">
-                <table className="w-full bg-gray-900 text-slate-200 border border-gray-700 rounded-xl">
-                  <thead className="bg-gray-800 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-3 py-2 text-slate-200">Analista</th>
-                      <th className="px-3 py-2 text-slate-200">Equipo</th>
-                      <th className="px-3 py-2 text-slate-200">Materia</th>
-                      <th className="px-3 py-2 text-slate-200">Escuela</th>
-                      <th className="px-3 py-2 text-slate-200">Fecha Asignación</th>
-                      <th className="px-3 py-2 text-slate-200">Observaciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td className="px-3 py-2">{row.Analista}</td>
-                      <td className="px-3 py-2">{row.Equipo}</td>
-                      <td className="px-3 py-2">{row.Materia}</td>
-                      <td className="px-3 py-2">{row.Escuela}</td>
-                      <td className="px-3 py-2 text-gray-300">{row.Fecha_Asignacion}</td>
-                      <td className="px-3 py-2 text-gray-400">{row.Observaciones}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <GranulosTable
-                granulos={row.Gránulos}
-                tareaEditable={true}
-                onIniciarActividad={(gIdx, aIdx) => handleIniciarActividad(gIdx, aIdx, i)}
-                onTerminarActividad={(gIdx, aIdx) => handleTerminarActividad(gIdx, aIdx, i)}
-              />
+        {/* Tabla principal con altura 80vh y scroll */}
+        <div className="w-full max-h-[80vh] overflow-y-auto rounded-xl border border-gray-700 bg-gray-900 p-2">
+          {filteredData.length === 0 ? (
+            <div className="text-center py-8 text-gray-400 font-bold">
+              No tienes tareas asignadas.
             </div>
-          ))
-        )}
+          ) : (
+            filteredData.map((row, i) => (
+              <div key={i} className="mb-8 w-full">
+                <div className="w-full overflow-x-auto rounded-lg mb-2">
+                  <table className="w-full bg-gray-900 text-slate-200 border border-gray-700 rounded-xl">
+                    <thead className="bg-gray-800 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2 text-slate-200">Analista</th>
+                        <th className="px-3 py-2 text-slate-200">Equipo</th>
+                        <th className="px-3 py-2 text-slate-200">Materia</th>
+                        <th className="px-3 py-2 text-slate-200">Escuela</th>
+                        <th className="px-3 py-2 text-slate-200">Fecha Asignación</th>
+                        <th className="px-3 py-2 text-slate-200">Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="px-3 py-2">{row.Analista}</td>
+                        <td className="px-3 py-2">{row.Equipo}</td>
+                        <td className="px-3 py-2">{row.Materia}</td>
+                        <td className="px-3 py-2">{row.Escuela}</td>
+                        <td className="px-3 py-2 text-gray-300">{row.Fecha_Asignacion}</td>
+                        <td className="px-3 py-2 text-gray-400">{row.Observaciones}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <GranulosTable
+                  granulos={row.Gránulos}
+                  tareaEditable={true}
+                  onIniciarActividad={(gIdx, aIdx) => handleIniciarActividad(gIdx, aIdx, i)}
+                  onTerminarActividad={(gIdx, aIdx) => handleTerminarActividad(gIdx, aIdx, i)}
+                />
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -132,9 +132,9 @@ export default function PanelAnalista() {
           <h2 className="text-3xl md:text-4xl font-bold whitespace-pre-wrap w-full">
             <AnimatedTitle nombreAnalista={nombreAnalista} />
           </h2>
-          <p className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap w-full">
-            <AnimatedParagraph loadingTareas={loadingTareas} />
-          </p>
+          <div className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap w-full">
+  <AnimatedParagraph loadingTareas={loadingTareas} />
+</div>
         </div>
       </main>
       {/* CRUD de tareas del analista */}
