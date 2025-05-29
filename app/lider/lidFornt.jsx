@@ -2,11 +2,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import LiderChart from './chrtLider';
 
+// Configuración de bins y API
 const BIN_ID_CURSOS = '682f27e08960c979a59f5afe';
 const BIN_ID_TAREAS = '683473998561e97a501bb4f1';
 const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
 const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
 
+// Parámetros de tareas
 const GRANULOS_NOMBRES = ["Tema 1", "Tema 2", "Tema 3", "Tema 4", "Tema 5"];
 const ACTIVIDADES = [
   { Tipo: "Video educativo", Tiempo_Ideal_Min: 20 },
@@ -30,20 +32,20 @@ function normalizarNombre(nombre) {
 }
 
 export default function PanelLider() {
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState('');
   const [cargando, setCargando] = useState(true);
   const [cursos, setCursos] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [asignando, setAsignando] = useState(false);
 
-  // Filtros
+  // Filtros para UI
   const [filtroMateria, setFiltroMateria] = useState('');
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroEscuela, setFiltroEscuela] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEquipo, setFiltroEquipo] = useState(''); // Equipo debe ser seleccionado primero
 
-  // -- FUNCIÓN DE RECARGA MANUAL --
+  // --- FUNCIÓN DE RECARGA MANUAL ---
   const cargarTodo = async () => {
     setCargando(true);
     try {
@@ -62,151 +64,72 @@ export default function PanelLider() {
     setCargando(false);
   };
 
-  // -- Carga inicial SOLO una vez --
+  // --- Carga inicial ---
   useEffect(() => { cargarTodo(); }, []);
 
-  // -- Ajuste y reasignación cada vez que cambian los datos importantes o el equipo --
+  // --- ASIGNACIÓN SECUENCIAL A EQUIPOS Y ROUND-ROBIN DE ANALISTAS DENTRO DE EQUIPO ---
   useEffect(() => {
-    if (!equipoSeleccionado || cargando) return;
+    if (cargando) return;
 
-    async function ajustarTareas() {
+    async function asignarTareasEquiposYAnalistas() {
       setAsignando(true);
 
-      let nuevasTareas = [...tareas];
-      let hayCambios = false;
+      // 1. Filtra materias activas
+      const materiasActivas = cursos.filter(c => c['Nombre del Programa']);
 
-      // 1. Analistas válidos actuales del equipo
-      const analistas = usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado);
-      const analistasValidos = analistas.map(u => normalizarNombre(u.nombreCompleto));
+      // 2. Asignación secuencial: primero a equipos, luego a analistas DENTRO del equipo (round robin)
+      let tareasNuevas = [];
+      EQUIPOS.forEach((equipo, equipoIdx) => {
+        // Todas las materias que le tocan a este equipo, en orden de entrada
+        const materiasDelEquipo = materiasActivas.filter((_, idx) => EQUIPOS[idx % EQUIPOS.length] === equipo);
 
-      // 2. Quitar tareas de usuarios eliminados (solo de este equipo)
-      const tareasEliminadas = nuevasTareas.filter(
-        t => t.Equipo === equipoSeleccionado &&
-          !analistasValidos.includes(normalizarNombre(t.Analista))
-      );
-      nuevasTareas = nuevasTareas.filter(
-        t => t.Equipo !== equipoSeleccionado ||
-          analistasValidos.includes(normalizarNombre(t.Analista))
-      );
-
-      // 3. Reasignar tareas eliminadas (que no estén iniciadas)
-      tareasEliminadas.forEach(tareaEliminada => {
-        if (analistasValidos.length === 0) return;
-        // Calcular cargas actuales
-        const carga = {};
-        analistasValidos.forEach(a => {
-          carga[a] = nuevasTareas.filter(
-            t => t.Equipo === equipoSeleccionado && normalizarNombre(t.Analista) === a
-          ).length;
-        });
-        // Buscar analista con menos carga
-        let asignarA = analistasValidos[0];
-        for (let a of analistasValidos) {
-          if (carga[a] < carga[asignarA]) asignarA = a;
-        }
-        // Solo reasignar si no hay ninguna actividad iniciada
-        const ningunaIniciada = tareaEliminada.Gránulos.every(granulo =>
-          granulo.Actividades.every(act => (act.Estado === "Pendiente" || !act.Estado) && !act.Fecha_Inicio)
+        // Analistas activos de este equipo (el orden es estable)
+        const analistasEquipo = usuarios.filter(
+          u => u.rol === 'analista' && u.equipo === equipo
         );
-        if (ningunaIniciada) {
-          nuevasTareas.push({
-            ...tareaEliminada,
-            Analista: usuarios.find(u => normalizarNombre(u.nombreCompleto) === asignarA)?.nombreCompleto || asignarA,
-            Fecha_Asignacion: new Date().toISOString().split('T')[0],
-            Observaciones: "Reasignada automáticamente",
-          });
-          hayCambios = true;
-        }
-      });
+        if (materiasDelEquipo.length === 0) return;
 
-      // 4. NUEVO: Reasignar tareas no iniciadas de quien MÁS TIENE al que no tiene ninguna
-      const tareasEquipo = nuevasTareas.filter(t => t.Equipo === equipoSeleccionado);
-      analistasValidos.forEach(nuevoAnalista => {
-        // Si el nuevo analista no tiene tareas, buscar tarea para reasignar
-        const tieneTarea = tareasEquipo.some(t => normalizarNombre(t.Analista) === nuevoAnalista);
-        if (!tieneTarea) {
-          // Calcula quién es el analista con más tareas
-          const cargaPorAnalista = {};
-          analistasValidos.forEach(a => {
-            cargaPorAnalista[a] = tareasEquipo.filter(t => normalizarNombre(t.Analista) === a).length;
-          });
-          // Busca el analista con MÁS tareas (>0)
-          let mayorAnalista = analistasValidos[0];
-          for (let a of analistasValidos) {
-            if (cargaPorAnalista[a] > cargaPorAnalista[mayorAnalista]) mayorAnalista = a;
+        materiasDelEquipo.forEach((curso, idxMateriaEnEquipo) => {
+          // Round robin entre analistas del equipo
+          let analista = '';
+          if (analistasEquipo.length > 0) {
+            analista = analistasEquipo[idxMateriaEnEquipo % analistasEquipo.length].nombreCompleto;
           }
-          if (cargaPorAnalista[mayorAnalista] > 0) {
-            // Busca una tarea NO iniciada de ese analista
-            const tareaCandidato = tareasEquipo.find(t =>
-              normalizarNombre(t.Analista) === mayorAnalista &&
-              t.Gránulos.every(granulo =>
-                granulo.Actividades.every(
-                  act => (act.Estado === "Pendiente" || !act.Estado) && !act.Fecha_Inicio
-                )
-              )
-            );
-            if (tareaCandidato) {
-              nuevasTareas = nuevasTareas.filter(t => t !== tareaCandidato);
-              nuevasTareas.push({
-                ...tareaCandidato,
-                Analista: usuarios.find(u => normalizarNombre(u.nombreCompleto) === nuevoAnalista)?.nombreCompleto || nuevoAnalista,
+
+          // Busca si ya existe la tarea para esa materia y equipo
+          const existente = tareas.find(
+            t => t.Equipo === equipo && t.Materia === curso['Nombre del Programa']
+          );
+
+          tareasNuevas.push({
+            ...(existente || {}),
+            Analista: analista,
+            Equipo: equipo,
+            Materia: curso['Nombre del Programa'],
+            Escuela: curso['Escuela'],
+            Fecha_Asignacion: existente?.Fecha_Asignacion || new Date().toISOString().split('T')[0],
+            Observaciones: existente?.Observaciones || "",
+            Gránulos: existente?.Gránulos || GRANULOS_NOMBRES.map((nombre, i) => ({
+              ID_Granulo: i + 1,
+              Nombre_Granulo: nombre,
+              Actividades: ACTIVIDADES.map(act => ({
+                Tipo: act.Tipo,
                 Fecha_Asignacion: new Date().toISOString().split('T')[0],
-                Observaciones: "Reasignada automáticamente",
-              });
-              hayCambios = true;
-            }
-          }
-        }
-      });
-
-      // 5. Asignación normal para materias nuevas del equipo
-      const materiasEquipo = cursos.filter(c => c.asignado_a === equipoSeleccionado);
-      materiasEquipo.forEach((curso) => {
-        const yaAsignada = nuevasTareas.some(
-          t => t.Equipo === equipoSeleccionado && t.Materia === curso['Nombre del Programa']
-        );
-        if (yaAsignada) return;
-
-        const materiasPorAnalista = {};
-        analistas.forEach(a => {
-          materiasPorAnalista[a.nombreCompleto] = nuevasTareas.filter(
-            t =>
-              normalizarNombre(t.Analista) === normalizarNombre(a.nombreCompleto) &&
-              t.Equipo === equipoSeleccionado
-          ).length;
-        });
-
-        const analistaAsignado = analistas.reduce((minA, currA) =>
-          materiasPorAnalista[currA.nombreCompleto] < materiasPorAnalista[minA.nombreCompleto]
-            ? currA : minA, analistas[0]
-        );
-
-        nuevasTareas.push({
-          Analista: analistaAsignado.nombreCompleto,
-          Equipo: equipoSeleccionado,
-          Materia: curso['Nombre del Programa'],
-          Escuela: curso['Escuela'],
-          Fecha_Asignacion: new Date().toISOString().split('T')[0],
-          Observaciones: "",
-          Gránulos: GRANULOS_NOMBRES.map((nombre, i) => ({
-            ID_Granulo: i + 1,
-            Nombre_Granulo: nombre,
-            Actividades: ACTIVIDADES.map(act => ({
-              Tipo: act.Tipo,
-              Fecha_Asignacion: new Date().toISOString().split('T')[0],
-              Fecha_Inicio: "",
-              Fecha_Fin: "",
-              Tiempo_Ideal_Min: act.Tiempo_Ideal_Min,
-              Tiempo_Real_Min: "",
-              Estado: "Pendiente",
-              Observaciones: ""
+                Fecha_Inicio: "",
+                Fecha_Fin: "",
+                Tiempo_Ideal_Min: act.Tiempo_Ideal_Min,
+                Tiempo_Real_Min: "",
+                Estado: "Pendiente",
+                Observaciones: ""
+              }))
             }))
-          }))
+          });
         });
-        hayCambios = true;
       });
 
-      if (hayCambios) {
+      // 3. Solo actualizar si hay cambios reales
+      const stringify = obj => JSON.stringify(obj, null, 2);
+      if (stringify(tareasNuevas) !== stringify(tareas)) {
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
           method: 'PUT',
           headers: {
@@ -214,45 +137,69 @@ export default function PanelLider() {
             'X-Access-Key': API_KEY,
             'X-Bin-Versioning': 'false'
           },
-          body: JSON.stringify(nuevasTareas)
+          body: JSON.stringify(tareasNuevas)
         });
-        setTareas(nuevasTareas);
+        setTareas(tareasNuevas);
       }
       setAsignando(false);
     }
-    ajustarTareas();
+
+    asignarTareasEquiposYAnalistas();
     // eslint-disable-next-line
-  }, [equipoSeleccionado, cursos, tareas, usuarios, cargando]);
+  }, [cursos, usuarios, cargando]);
 
-  // Memoizados para performance UI
-  const analistasEquipo = useMemo(() =>
-    usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado),
-    [usuarios, equipoSeleccionado]
-  );
-  const tareasEquipo = useMemo(() =>
-    tareas.filter(t => t.Equipo === equipoSeleccionado),
-    [tareas, equipoSeleccionado]
-  );
+  // Memo para performance UI (opcional)
+  const materiasUnicas = useMemo(() => [
+    ...new Set(
+      tareas
+        .filter(t => t.Equipo === filtroEquipo)
+        .map(t => t.Materia)
+    )
+  ], [tareas, filtroEquipo]);
 
-  const materiasUnicas = [...new Set(tareasEquipo.map(t => t.Materia))];
-  const analistasUnicos = [...new Set(tareasEquipo.map(t => t.Analista))];
-  const escuelasUnicas = [...new Set(tareasEquipo.map(t => t.Escuela))];
+  const analistasUnicos = useMemo(() => [
+    ...new Set(
+      usuarios
+        .filter(u => u.rol === 'analista' && u.equipo === filtroEquipo)
+        .map(u => u.nombreCompleto)
+    )
+  ], [usuarios, filtroEquipo]);
 
-  const tareasFiltradas = useMemo(() => {
-    return tareasEquipo
-      .filter(t =>
-        (!filtroMateria || t.Materia === filtroMateria) &&
-        (!filtroAnalista || t.Analista === filtroAnalista) &&
-        (!filtroEscuela || t.Escuela === filtroEscuela)
-      );
-  }, [tareasEquipo, filtroMateria, filtroAnalista, filtroEscuela]);
+  const escuelasUnicas = useMemo(() => [
+    ...new Set(
+      tareas
+        .filter(t => t.Equipo === filtroEquipo)
+        .map(t => t.Escuela)
+    )
+  ], [tareas, filtroEquipo]);
 
+  // Equipos únicos presentes en las tareas
+  const equiposUnicos = [...new Set(tareas.map(t => t.Equipo))].filter(Boolean);
+
+  // --------- FIX para evitar error de map sobre undefined -----------
   const actividadesFiltradas = (granulos) => {
+    if (!Array.isArray(granulos)) return [];
     return granulos.map(g => ({
       ...g,
       Actividades: g.Actividades.filter(a => !filtroEstado || a.Estado === filtroEstado)
     })).filter(g => g.Actividades.length > 0);
   };
+
+  // Filtro SOLO aplica cuando se selecciona equipo
+  const tareasFiltradas = useMemo(() => {
+    if (!filtroEquipo) return [];
+    return tareas
+      .filter(t =>
+        t.Equipo === filtroEquipo &&
+        (!filtroMateria || t.Materia === filtroMateria) &&
+        (!filtroAnalista || t.Analista === filtroAnalista) &&
+        (!filtroEscuela || t.Escuela === filtroEscuela)
+      );
+  }, [tareas, filtroEquipo, filtroMateria, filtroAnalista, filtroEscuela]);
+
+  // Para LiderChart: muestra solo la data del equipo seleccionado.
+  const tareasEquipo = tareas.filter(t => t.Equipo === filtroEquipo);
+  const analistasEquipo = usuarios.filter(u => u.rol === 'analista' && u.equipo === filtroEquipo);
 
   if (cargando) {
     return (
@@ -267,204 +214,185 @@ export default function PanelLider() {
 
   return (
     <div className="min-h-screen bg-black text-white p-2 sm:p-4">
-      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10">
-        {/* BOTÓN DE ACTUALIZAR */}
-        <div className="w-full flex items-center justify-end mb-2">
-          <button
-            className="bg-cyan-700 hover:bg-cyan-900 text-white font-bold py-2 px-4 rounded-xl transition"
-            onClick={cargarTodo}
-            disabled={cargando || asignando}
-          >
-            {cargando ? "Actualizando..." : "Actualizar"}
-          </button>
-        </div>
-
-        {/* SELECCIÓN DE EQUIPO */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-4 flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold mb-2 text-cyan-400">Panel de Líder</h1>
-            <label className="block text-base mb-1">Selecciona tu equipo:</label>
-            <select
-              value={equipoSeleccionado}
-              onChange={e => setEquipoSeleccionado(e.target.value)}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500 transition"
-            >
-              <option value="">-- Selecciona un equipo --</option>
-              {EQUIPOS.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
-            {asignando && <div className="text-yellow-400 mt-2">Ajustando tareas automáticamente...</div>}
-          </div>
-        </div>
-
-        {/* INTEGRANTES DEL EQUIPO */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Analistas del equipo</h2>
-          {analistasEquipo.length === 0 ? (
-            <div className="text-gray-400">No hay analistas registrados en este equipo.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm mb-2">
-                <thead>
-                  <tr>
-                    <th className="text-left px-3 py-2 text-cyan-400">Nombre</th>
-                    <th className="text-left px-3 py-2 text-cyan-400">Correo</th>
-                    <th className="text-left px-3 py-2 text-cyan-400"># Materias</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analistasEquipo.map((a, i) => (
-                    <tr key={i} className="hover:bg-gray-800 transition">
-                      <td className="px-3 py-2">{a.nombreCompleto}</td>
-                      <td className="px-3 py-2">{a.correo}</td>
-                      <td className="px-3 py-2 text-green-300 font-bold text-center">
-                        {
-                          tareasEquipo.filter(
-                            t => normalizarNombre(t.Analista) === normalizarNombre(a.nombreCompleto)
-                          ).length
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        <LiderChart tareasEquipo={tareasEquipo} analistasEquipo={analistasEquipo} />
-
-        {/* FILTROS AVANZADOS */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex flex-col sm:flex-row flex-wrap gap-4">
-          <div>
-            <label className="text-cyan-300 text-xs">Materia:</label>
-            <select
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-              value={filtroMateria}
-              onChange={e => setFiltroMateria(e.target.value)}
-            >
-              <option value="">Todas</option>
-              {materiasUnicas.map((mat, idx) => (
-                <option key={idx} value={mat}>{mat}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-cyan-300 text-xs">Analista:</label>
-            <select
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-              value={filtroAnalista}
-              onChange={e => setFiltroAnalista(e.target.value)}
-            >
-              <option value="">Todos</option>
-              {analistasUnicos.map((an, idx) => (
-                <option key={idx} value={an}>{an}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-cyan-300 text-xs">Escuela:</label>
-            <select
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-              value={filtroEscuela}
-              onChange={e => setFiltroEscuela(e.target.value)}
-            >
-              <option value="">Todas</option>
-              {escuelasUnicas.map((esc, idx) => (
-                <option key={idx} value={esc}>{esc}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-cyan-300 text-xs">Estado actividad:</label>
-            <select
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
-              value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value)}
-            >
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="En progreso">En progreso</option>
-              <option value="Terminado">Terminado</option>
-            </select>
-          </div>
-          <button
-            className="px-3 py-2 mt-4 sm:mt-0 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-            onClick={() => {
-              setFiltroMateria('');
-              setFiltroAnalista('');
-              setFiltroEscuela('');
-              setFiltroEstado('');
-            }}
-          >
-            Limpiar Filtros
-          </button>
-        </div>
-
-        {/* MATERIAS Y GRÁNULOS (FILTRADAS) */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Materias y estado de gránulos</h2>
-          {tareasFiltradas.length === 0 ? (
-            <div className="text-gray-400">No hay materias asignadas con esos filtros.</div>
-          ) : (
-            <div className="overflow-auto max-h-[65vh]">
-              {tareasFiltradas.map((mat, idx) => (
-                <div key={idx} className="mb-8">
-                  <h3 className="font-semibold text-cyan-200 text-base mb-2">
-                    {mat.Materia}
-                    <span className="ml-2 px-2 py-1 bg-cyan-800 text-white text-xs rounded-full">{mat.Escuela}</span>
-                    <span className="ml-2 px-2 py-1 bg-cyan-700 text-white text-xs rounded-full">{mat.Analista}</span>
-                  </h3>
-                  <div className="mb-2 text-sm text-gray-400">
-                    <b>Fecha de asignación:</b> {mat.Fecha_Asignacion || '-'} &nbsp; | &nbsp;
-                    <b>Observaciones:</b> {mat.Observaciones || '-'}
-                  </div>
-                  <div className="overflow-x-auto rounded-lg border border-gray-800">
-                    <table className="min-w-max w-full text-xs sm:text-sm mb-2 border-separate border-spacing-0">
-                      <thead className="bg-gray-800 sticky top-0 z-10">
-                        <tr>
-                          <th className="px-3 py-2 text-cyan-400">Gránulo</th>
-                          <th className="px-3 py-2 text-cyan-400">Actividad</th>
-                          <th className="px-3 py-2 text-cyan-400">Estado</th>
-                          <th className="px-3 py-2 text-cyan-400">Fecha Asignación</th>
-                          <th className="px-3 py-2 text-cyan-400">Fecha Inicio</th>
-                          <th className="px-3 py-2 text-cyan-400">Fecha Fin</th>
-                          <th className="px-3 py-2 text-cyan-400">Tiempo Ideal</th>
-                          <th className="px-3 py-2 text-cyan-400">Tiempo Real</th>
-                          <th className="px-3 py-2 text-cyan-400">Observaciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-gray-900">
-                        {actividadesFiltradas(mat.Gránulos).map((g, idxG) =>
-                          g.Actividades.map((act, idxA) => (
-                            <tr key={`${idxG}-${idxA}`} className="hover:bg-gray-800 transition group">
-                              <td className="px-3 py-2 font-semibold text-cyan-200">{g.Nombre_Granulo}</td>
-                              <td className="px-3 py-2 text-white">{act.Tipo}</td>
-                              <td className={`px-3 py-2 font-bold text-center rounded-lg ${
-                                act.Estado === 'Terminado'
-                                  ? 'bg-green-700 text-white'
-                                  : act.Estado === 'En progreso'
-                                  ? 'bg-yellow-600 text-black'
-                                  : 'bg-gray-800 text-gray-200'
-                              }`}>
-                                {act.Estado || 'Pendiente'}
-                              </td>
-                              <td className="px-3 py-2 text-green-200">{act.Fecha_Asignacion || '-'}</td>
-                              <td className="px-3 py-2 text-cyan-200">{act.Fecha_Inicio || '-'}</td>
-                              <td className="px-3 py-2 text-cyan-200">{act.Fecha_Fin || '-'}</td>
-                              <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Ideal_Min}</td>
-                              <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Real_Min || '-'}</td>
-                              <td className="px-3 py-2 text-gray-300">{act.Observaciones || '-'}</td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* FILTRO OBLIGATORIO DE EQUIPO */}
+      <div className="max-w-xl mx-auto my-10 bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-6 flex flex-col items-center gap-6">
+        <label className="text-cyan-300 font-bold text-base">
+          Selecciona un equipo para visualizar información
+        </label>
+        <select
+          className="w-full max-w-xs bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-lg"
+          value={filtroEquipo}
+          onChange={e => {
+            setFiltroEquipo(e.target.value);
+            // Limpiar otros filtros al cambiar equipo
+            setFiltroMateria('');
+            setFiltroAnalista('');
+            setFiltroEscuela('');
+            setFiltroEstado('');
+          }}
+        >
+          <option value="">-- Selecciona Equipo --</option>
+          {EQUIPOS.map((eq, idx) => (
+            <option key={idx} value={eq}>{eq}</option>
+          ))}
+        </select>
       </div>
+
+      {/* Solo mostrar el resto si hay equipo seleccionado */}
+      {filtroEquipo && (
+        <>
+          {/* Gráfica global */}
+          <LiderChart tareasEquipo={tareasEquipo} analistasEquipo={analistasEquipo} />
+
+          <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10">
+
+            {/* BOTÓN DE ACTUALIZAR */}
+            <div className="w-full flex items-center justify-end mb-2">
+              <button
+                className="bg-cyan-700 hover:bg-cyan-900 text-white font-bold py-2 px-4 rounded-xl transition"
+                onClick={cargarTodo}
+                disabled={cargando || asignando}
+              >
+                {cargando ? "Actualizando..." : "Actualizar"}
+              </button>
+            </div>
+            
+            {/* FILTROS */}
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex flex-col sm:flex-row flex-wrap gap-4">
+              <div>
+                <label className="text-cyan-300 text-xs">Materia:</label>
+                <select
+                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                  value={filtroMateria}
+                  onChange={e => setFiltroMateria(e.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {materiasUnicas.map((mat, idx) => (
+                    <option key={idx} value={mat}>{mat}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-cyan-300 text-xs">Analista:</label>
+                <select
+                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                  value={filtroAnalista}
+                  onChange={e => setFiltroAnalista(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  {analistasUnicos.map((an, idx) => (
+                    <option key={idx} value={an}>{an}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-cyan-300 text-xs">Escuela:</label>
+                <select
+                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                  value={filtroEscuela}
+                  onChange={e => setFiltroEscuela(e.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {escuelasUnicas.map((esc, idx) => (
+                    <option key={idx} value={esc}>{esc}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-cyan-300 text-xs">Estado actividad:</label>
+                <select
+                  className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-xs"
+                  value={filtroEstado}
+                  onChange={e => setFiltroEstado(e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="En progreso">En progreso</option>
+                  <option value="Terminado">Terminado</option>
+                </select>
+              </div>
+              <button
+                className="px-3 py-2 mt-4 sm:mt-0 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                onClick={() => {
+                  setFiltroMateria('');
+                  setFiltroAnalista('');
+                  setFiltroEscuela('');
+                  setFiltroEstado('');
+                }}
+              >
+                Limpiar Filtros
+              </button>
+            </div>
+
+            {/* MATERIAS Y GRÁNULOS (FILTRADAS) */}
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Materias y estado de gránulos</h2>
+              {tareasFiltradas.length === 0 ? (
+                <div className="text-gray-400">No hay materias asignadas con esos filtros.</div>
+              ) : (
+                <div className="overflow-auto max-h-[65vh]">
+                  {tareasFiltradas.map((mat, idx) => (
+                    <div key={idx} className="mb-8">
+                      <h3 className="font-semibold text-cyan-200 text-base mb-2">
+                        {mat.Materia}
+                        <span className="ml-2 px-2 py-1 bg-cyan-800 text-white text-xs rounded-full">{mat.Escuela}</span>
+                        <span className="ml-2 px-2 py-1 bg-cyan-700 text-white text-xs rounded-full">{mat.Analista}</span>
+                        <span className="ml-2 px-2 py-1 bg-cyan-900 text-white text-xs rounded-full">{mat.Equipo}</span>
+                      </h3>
+                      <div className="mb-2 text-sm text-gray-400">
+                        <b>Fecha de asignación:</b> {mat.Fecha_Asignacion || '-'} &nbsp; | &nbsp;
+                        <b>Observaciones:</b> {mat.Observaciones || '-'}
+                      </div>
+                      <div className="overflow-x-auto rounded-lg border border-gray-800">
+                        <table className="min-w-max w-full text-xs sm:text-sm mb-2 border-separate border-spacing-0">
+                          <thead className="bg-gray-800 sticky top-0 z-10">
+                            <tr>
+                              <th className="px-3 py-2 text-cyan-400">Gránulo</th>
+                              <th className="px-3 py-2 text-cyan-400">Actividad</th>
+                              <th className="px-3 py-2 text-cyan-400">Estado</th>
+                              <th className="px-3 py-2 text-cyan-400">Fecha Asignación</th>
+                              <th className="px-3 py-2 text-cyan-400">Fecha Inicio</th>
+                              <th className="px-3 py-2 text-cyan-400">Fecha Fin</th>
+                              <th className="px-3 py-2 text-cyan-400">Tiempo Ideal</th>
+                              <th className="px-3 py-2 text-cyan-400">Tiempo Real</th>
+                              <th className="px-3 py-2 text-cyan-400">Observaciones</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-gray-900">
+                            {actividadesFiltradas(mat.Gránulos).map((g, idxG) =>
+                              g.Actividades.map((act, idxA) => (
+                                <tr key={`${idxG}-${idxA}`} className="hover:bg-gray-800 transition group">
+                                  <td className="px-3 py-2 font-semibold text-cyan-200">{g.Nombre_Granulo}</td>
+                                  <td className="px-3 py-2 text-white">{act.Tipo}</td>
+                                  <td className={`px-3 py-2 font-bold text-center rounded-lg ${
+                                    act.Estado === 'Terminado'
+                                      ? 'bg-green-700 text-white'
+                                      : act.Estado === 'En progreso'
+                                      ? 'bg-yellow-600 text-black'
+                                      : 'bg-gray-800 text-gray-200'
+                                  }`}>
+                                    {act.Estado || 'Pendiente'}
+                                  </td>
+                                  <td className="px-3 py-2 text-green-200">{act.Fecha_Asignacion || '-'}</td>
+                                  <td className="px-3 py-2 text-cyan-200">{act.Fecha_Inicio || '-'}</td>
+                                  <td className="px-3 py-2 text-cyan-200">{act.Fecha_Fin || '-'}</td>
+                                  <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Ideal_Min}</td>
+                                  <td className="px-3 py-2 text-yellow-300">{act.Tiempo_Real_Min || '-'}</td>
+                                  <td className="px-3 py-2 text-gray-300">{act.Observaciones || '-'}</td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

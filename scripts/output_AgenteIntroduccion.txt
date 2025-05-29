@@ -1,0 +1,10 @@
+📚 Generando INTRODUCCIÓN de unidad para:
+Materia:  Proceso de Selección de Proveedores
+Nivel: Pregrado por ciclos propedéuticos
+Modalidad: Presencial & Virtual
+Semestre: 4
+
+
+🔎 Consulta de búsqueda generada por el LLM:
+(site:.edu OR site:.gov OR site:.ac) ("Proceso de Selección de Proveedores" OR "Supplier Selection Process") (pregrado OR undergraduate) (ciclos propedéuticos OR "cycle-based" OR "competency-based") (presencial OR "face-to-face" OR "virtual" OR "online") (semestre 4 OR "fourth semester") (2020..2023)
+No se encontraron snippets relevantes.

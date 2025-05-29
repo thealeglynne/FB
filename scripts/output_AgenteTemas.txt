@@ -1,0 +1,31 @@
+📚 Generando temáticas para:
+Materia:  Proceso de Selección de Proveedores
+Nivel: Pregrado por ciclos propedéuticos
+Modalidad: Presencial & Virtual
+Semestre: 4
+
+
+🔎 Consulta de búsqueda generada por el LLM:
+(site:edu OR site:gov OR site:ac.uk) ("supplier selection process" OR "procurement process" AND (curriculum OR syllabus OR course outline) AND (undergraduate OR bachelor) AND (presencial OR virtual OR blended) AND (semester 4 OR fourth semester)
+
+=== TEMÁTICAS RECOMENDADAS POR LA IA ===
+
+A continuación, se presenta la estructura de la materia "Proceso de Selección de Proveedores" en 4 ejes principales, con 3 títulos de temáticas para cada eje:
+
+**Eje 1: Fundamentos del Proceso de Selección de Proveedores
+2. Introducción al Proceso de Compras
+3. Conceptos Básicos de la Cadena de Suministro**
+
+**Eje 2: Análisis del Proceso de Selección de Proveedores
+1. Identificación de Necesidades y Especificaciones
+2. Investigación y Selección de Proveedores
+3. Evaluación y Selección de Proveedor**
+
+**Eje 3: Gestión del Proceso de Selección
+1. Gestión de la Cadena de Suministro
+2. Análisis de Rendimiento y Mejora Continua
+3. Gestión de Riesgos en la Selección de Proveedores**
+
+**Eje 4: Aplicaciones y Tendencias en la Selección de Proveedores
+2. Compras Sostenibles y Ética
+3. E-Procurement y Compras Electrónicas**

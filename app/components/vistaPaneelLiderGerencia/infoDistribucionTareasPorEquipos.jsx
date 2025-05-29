@@ -2,11 +2,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import LiderChart from '../../lider/chrtLider';
 
+// Configuración de bins y API
 const BIN_ID_CURSOS = '682f27e08960c979a59f5afe';
 const BIN_ID_TAREAS = '683473998561e97a501bb4f1';
 const BIN_ID_USUARIOS = '683358498960c979a5a0fa92';
 const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
 
+// Parámetros de tareas
 const GRANULOS_NOMBRES = ["Tema 1", "Tema 2", "Tema 3", "Tema 4", "Tema 5"];
 const ACTIVIDADES = [
   { Tipo: "Video educativo", Tiempo_Ideal_Min: 20 },
@@ -30,20 +32,19 @@ function normalizarNombre(nombre) {
 }
 
 export default function PanelLider() {
-  const [equipoSeleccionado, setEquipoSeleccionado] = useState('');
   const [cargando, setCargando] = useState(true);
   const [cursos, setCursos] = useState([]);
   const [tareas, setTareas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [asignando, setAsignando] = useState(false);
 
-  // Filtros
+  // Filtros para UI
   const [filtroMateria, setFiltroMateria] = useState('');
   const [filtroAnalista, setFiltroAnalista] = useState('');
   const [filtroEscuela, setFiltroEscuela] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
 
-  // -- FUNCIÓN DE RECARGA MANUAL --
+  // --- FUNCIÓN DE RECARGA MANUAL ---
   const cargarTodo = async () => {
     setCargando(true);
     try {
@@ -62,133 +63,47 @@ export default function PanelLider() {
     setCargando(false);
   };
 
-  // -- Carga inicial SOLO una vez --
+  // --- Carga inicial ---
   useEffect(() => { cargarTodo(); }, []);
 
-  // -- Ajuste y reasignación cada vez que cambian los datos importantes o el equipo --
+  // --- ASIGNACIÓN SECUENCIAL A EQUIPOS Y ANALISTAS ---
   useEffect(() => {
-    if (!equipoSeleccionado || cargando) return;
+    if (cargando) return;
 
-    async function ajustarTareas() {
+    async function asignarTareasEquiposYAnalistas() {
       setAsignando(true);
 
-      let nuevasTareas = [...tareas];
-      let hayCambios = false;
+      // 1. Lista filtrada de materias activas
+      const materiasActivas = cursos.filter(c => c['Nombre del Programa']);
 
-      // 1. Analistas válidos actuales del equipo
-      const analistas = usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado);
-      const analistasValidos = analistas.map(u => normalizarNombre(u.nombreCompleto));
+      // 2. Asignar materias secuencialmente a equipos (round-robin)
+      let tareasNuevas = [];
+      materiasActivas.forEach((curso, idx) => {
+        const equipo = EQUIPOS[idx % EQUIPOS.length];
 
-      // 2. Quitar tareas de usuarios eliminados (solo de este equipo)
-      const tareasEliminadas = nuevasTareas.filter(
-        t => t.Equipo === equipoSeleccionado &&
-          !analistasValidos.includes(normalizarNombre(t.Analista))
-      );
-      nuevasTareas = nuevasTareas.filter(
-        t => t.Equipo !== equipoSeleccionado ||
-          analistasValidos.includes(normalizarNombre(t.Analista))
-      );
-
-      // 3. Reasignar tareas eliminadas (que no estén iniciadas)
-      tareasEliminadas.forEach(tareaEliminada => {
-        if (analistasValidos.length === 0) return;
-        // Calcular cargas actuales
-        const carga = {};
-        analistasValidos.forEach(a => {
-          carga[a] = nuevasTareas.filter(
-            t => t.Equipo === equipoSeleccionado && normalizarNombre(t.Analista) === a
-          ).length;
-        });
-        // Buscar analista con menos carga
-        let asignarA = analistasValidos[0];
-        for (let a of analistasValidos) {
-          if (carga[a] < carga[asignarA]) asignarA = a;
-        }
-        // Solo reasignar si no hay ninguna actividad iniciada
-        const ningunaIniciada = tareaEliminada.Gránulos.every(granulo =>
-          granulo.Actividades.every(act => (act.Estado === "Pendiente" || !act.Estado) && !act.Fecha_Inicio)
+        // Analistas activos del equipo
+        const analistasEquipo = usuarios.filter(
+          u => u.rol === 'analista' && u.equipo === equipo
         );
-        if (ningunaIniciada) {
-          nuevasTareas.push({
-            ...tareaEliminada,
-            Analista: usuarios.find(u => normalizarNombre(u.nombreCompleto) === asignarA)?.nombreCompleto || asignarA,
-            Fecha_Asignacion: new Date().toISOString().split('T')[0],
-            Observaciones: "Reasignada automáticamente",
-          });
-          hayCambios = true;
-        }
-      });
+        // Asignar secuencialmente dentro del equipo
+        let analista = '';
+        if (analistasEquipo.length > 0)
+          analista = analistasEquipo[idx % analistasEquipo.length].nombreCompleto;
 
-      // 4. NUEVO: Reasignar tareas no iniciadas de quien MÁS TIENE al que no tiene ninguna
-      const tareasEquipo = nuevasTareas.filter(t => t.Equipo === equipoSeleccionado);
-      analistasValidos.forEach(nuevoAnalista => {
-        // Si el nuevo analista no tiene tareas, buscar tarea para reasignar
-        const tieneTarea = tareasEquipo.some(t => normalizarNombre(t.Analista) === nuevoAnalista);
-        if (!tieneTarea) {
-          // Calcula quién es el analista con más tareas
-          const cargaPorAnalista = {};
-          analistasValidos.forEach(a => {
-            cargaPorAnalista[a] = tareasEquipo.filter(t => normalizarNombre(t.Analista) === a).length;
-          });
-          // Busca el analista con MÁS tareas (>0)
-          let mayorAnalista = analistasValidos[0];
-          for (let a of analistasValidos) {
-            if (cargaPorAnalista[a] > cargaPorAnalista[mayorAnalista]) mayorAnalista = a;
-          }
-          if (cargaPorAnalista[mayorAnalista] > 0) {
-            // Busca una tarea NO iniciada de ese analista
-            const tareaCandidato = tareasEquipo.find(t =>
-              normalizarNombre(t.Analista) === mayorAnalista &&
-              t.Gránulos.every(granulo =>
-                granulo.Actividades.every(
-                  act => (act.Estado === "Pendiente" || !act.Estado) && !act.Fecha_Inicio
-                )
-              )
-            );
-            if (tareaCandidato) {
-              nuevasTareas = nuevasTareas.filter(t => t !== tareaCandidato);
-              nuevasTareas.push({
-                ...tareaCandidato,
-                Analista: usuarios.find(u => normalizarNombre(u.nombreCompleto) === nuevoAnalista)?.nombreCompleto || nuevoAnalista,
-                Fecha_Asignacion: new Date().toISOString().split('T')[0],
-                Observaciones: "Reasignada automáticamente",
-              });
-              hayCambios = true;
-            }
-          }
-        }
-      });
-
-      // 5. Asignación normal para materias nuevas del equipo
-      const materiasEquipo = cursos.filter(c => c.asignado_a === equipoSeleccionado);
-      materiasEquipo.forEach((curso) => {
-        const yaAsignada = nuevasTareas.some(
-          t => t.Equipo === equipoSeleccionado && t.Materia === curso['Nombre del Programa']
-        );
-        if (yaAsignada) return;
-
-        const materiasPorAnalista = {};
-        analistas.forEach(a => {
-          materiasPorAnalista[a.nombreCompleto] = nuevasTareas.filter(
-            t =>
-              normalizarNombre(t.Analista) === normalizarNombre(a.nombreCompleto) &&
-              t.Equipo === equipoSeleccionado
-          ).length;
-        });
-
-        const analistaAsignado = analistas.reduce((minA, currA) =>
-          materiasPorAnalista[currA.nombreCompleto] < materiasPorAnalista[minA.nombreCompleto]
-            ? currA : minA, analistas[0]
+        // Buscar si ya existe la tarea para esa materia y equipo
+        const existente = tareas.find(
+          t => t.Equipo === equipo && t.Materia === curso['Nombre del Programa']
         );
 
-        nuevasTareas.push({
-          Analista: analistaAsignado.nombreCompleto,
-          Equipo: equipoSeleccionado,
+        tareasNuevas.push({
+          ...(existente || {}),
+          Analista: analista,
+          Equipo: equipo,
           Materia: curso['Nombre del Programa'],
           Escuela: curso['Escuela'],
-          Fecha_Asignacion: new Date().toISOString().split('T')[0],
-          Observaciones: "",
-          Gránulos: GRANULOS_NOMBRES.map((nombre, i) => ({
+          Fecha_Asignacion: existente?.Fecha_Asignacion || new Date().toISOString().split('T')[0],
+          Observaciones: existente?.Observaciones || "",
+          Gránulos: existente?.Gránulos || GRANULOS_NOMBRES.map((nombre, i) => ({
             ID_Granulo: i + 1,
             Nombre_Granulo: nombre,
             Actividades: ACTIVIDADES.map(act => ({
@@ -203,10 +118,11 @@ export default function PanelLider() {
             }))
           }))
         });
-        hayCambios = true;
       });
 
-      if (hayCambios) {
+      // 3. Solo actualizar si hay cambios reales
+      const stringify = obj => JSON.stringify(obj, null, 2);
+      if (stringify(tareasNuevas) !== stringify(tareas)) {
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID_TAREAS}`, {
           method: 'PUT',
           headers: {
@@ -214,45 +130,45 @@ export default function PanelLider() {
             'X-Access-Key': API_KEY,
             'X-Bin-Versioning': 'false'
           },
-          body: JSON.stringify(nuevasTareas)
+          body: JSON.stringify(tareasNuevas)
         });
-        setTareas(nuevasTareas);
+        setTareas(tareasNuevas);
       }
       setAsignando(false);
     }
-    ajustarTareas();
+
+    asignarTareasEquiposYAnalistas();
     // eslint-disable-next-line
-  }, [equipoSeleccionado, cursos, tareas, usuarios, cargando]);
+  }, [cursos, usuarios, cargando]);
 
-  // Memoizados para performance UI
-  const analistasEquipo = useMemo(() =>
-    usuarios.filter(u => u.rol === 'analista' && u.equipo === equipoSeleccionado),
-    [usuarios, equipoSeleccionado]
-  );
-  const tareasEquipo = useMemo(() =>
-    tareas.filter(t => t.Equipo === equipoSeleccionado),
-    [tareas, equipoSeleccionado]
-  );
+  // Memo para performance UI (opcional)
+  const materiasUnicas = [...new Set(tareas.map(t => t.Materia))];
+  const analistasUnicos = [...new Set(tareas.map(t => t.Analista))];
+  const escuelasUnicas = [...new Set(tareas.map(t => t.Escuela))];
 
-  const materiasUnicas = [...new Set(tareasEquipo.map(t => t.Materia))];
-  const analistasUnicos = [...new Set(tareasEquipo.map(t => t.Analista))];
-  const escuelasUnicas = [...new Set(tareasEquipo.map(t => t.Escuela))];
-
-  const tareasFiltradas = useMemo(() => {
-    return tareasEquipo
-      .filter(t =>
-        (!filtroMateria || t.Materia === filtroMateria) &&
-        (!filtroAnalista || t.Analista === filtroAnalista) &&
-        (!filtroEscuela || t.Escuela === filtroEscuela)
-      );
-  }, [tareasEquipo, filtroMateria, filtroAnalista, filtroEscuela]);
-
+  // --------- FIX para evitar error de map sobre undefined -----------
   const actividadesFiltradas = (granulos) => {
+    if (!Array.isArray(granulos)) return [];
     return granulos.map(g => ({
       ...g,
       Actividades: g.Actividades.filter(a => !filtroEstado || a.Estado === filtroEstado)
     })).filter(g => g.Actividades.length > 0);
   };
+
+  const tareasFiltradas = useMemo(() => {
+    return tareas
+      .filter(t =>
+        (!filtroMateria || t.Materia === filtroMateria) &&
+        (!filtroAnalista || t.Analista === filtroAnalista) &&
+        (!filtroEscuela || t.Escuela === filtroEscuela)
+      );
+  }, [tareas, filtroMateria, filtroAnalista, filtroEscuela]);
+
+  // ------ ESTAS SON LAS LÍNEAS QUE FALTABAN ------
+  // Para LiderChart: muestra toda la data de materias y analistas del sistema.
+  const tareasEquipo = tareas;
+  const analistasEquipo = usuarios.filter(u => u.rol === 'analista');
+  // -----------------------------------------------
 
   if (cargando) {
     return (
@@ -267,7 +183,11 @@ export default function PanelLider() {
 
   return (
     <div className="min-h-screen bg-black text-white p-2 sm:p-4">
+      {/* Gráfica global */}
+      <LiderChart tareasEquipo={tareasEquipo} analistasEquipo={analistasEquipo} />
+
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-10">
+
         {/* BOTÓN DE ACTUALIZAR */}
         <div className="w-full flex items-center justify-end mb-2">
           <button
@@ -278,61 +198,8 @@ export default function PanelLider() {
             {cargando ? "Actualizando..." : "Actualizar"}
           </button>
         </div>
-
-        {/* SELECCIÓN DE EQUIPO */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-4 flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-1">
-            <h1 className="text-xl sm:text-2xl font-bold mb-2 text-cyan-400">Panel de Líder</h1>
-            <label className="block text-base mb-1">Selecciona tu equipo:</label>
-            <select
-              value={equipoSeleccionado}
-              onChange={e => setEquipoSeleccionado(e.target.value)}
-              className="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500 transition"
-            >
-              <option value="">-- Selecciona un equipo --</option>
-              {EQUIPOS.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
-            {asignando && <div className="text-yellow-400 mt-2">Ajustando tareas automáticamente...</div>}
-          </div>
-        </div>
-
-        {/* INTEGRANTES DEL EQUIPO */}
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-cyan-300 mb-2">Analistas del equipo</h2>
-          {analistasEquipo.length === 0 ? (
-            <div className="text-gray-400">No hay analistas registrados en este equipo.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm mb-2">
-                <thead>
-                  <tr>
-                    <th className="text-left px-3 py-2 text-cyan-400">Nombre</th>
-                    <th className="text-left px-3 py-2 text-cyan-400">Correo</th>
-                    <th className="text-left px-3 py-2 text-cyan-400"># Materias</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analistasEquipo.map((a, i) => (
-                    <tr key={i} className="hover:bg-gray-800 transition">
-                      <td className="px-3 py-2">{a.nombreCompleto}</td>
-                      <td className="px-3 py-2">{a.correo}</td>
-                      <td className="px-3 py-2 text-green-300 font-bold text-center">
-                        {
-                          tareasEquipo.filter(
-                            t => normalizarNombre(t.Analista) === normalizarNombre(a.nombreCompleto)
-                          ).length
-                        }
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        <LiderChart tareasEquipo={tareasEquipo} analistasEquipo={analistasEquipo} />
-
-        {/* FILTROS AVANZADOS */}
+        
+        {/* FILTROS */}
         <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex flex-col sm:flex-row flex-wrap gap-4">
           <div>
             <label className="text-cyan-300 text-xs">Materia:</label>
@@ -412,6 +279,7 @@ export default function PanelLider() {
                     {mat.Materia}
                     <span className="ml-2 px-2 py-1 bg-cyan-800 text-white text-xs rounded-full">{mat.Escuela}</span>
                     <span className="ml-2 px-2 py-1 bg-cyan-700 text-white text-xs rounded-full">{mat.Analista}</span>
+                    <span className="ml-2 px-2 py-1 bg-cyan-900 text-white text-xs rounded-full">{mat.Equipo}</span>
                   </h3>
                   <div className="mb-2 text-sm text-gray-400">
                     <b>Fecha de asignación:</b> {mat.Fecha_Asignacion || '-'} &nbsp; | &nbsp;

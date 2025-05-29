@@ -1,19 +1,15 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import ChartsPanel from './components/ChartsPane';
-import NewUser from '../components/newUser/usuarioNuevo'
+import NewUser from '../components/newUser/usuarioNuevo';
 
-// -------------------
 // Toast (alerta visual)
-// -------------------
 function Toast({ show, message, type = "info", onClose }) {
   if (!show) return null;
-
   let color = "bg-green-600";
   if (type === "error") color = "bg-red-700";
   if (type === "info") color = "bg-blue-700";
   if (type === "warn") color = "bg-yellow-600 text-black";
-
   return (
     <div
       className={`
@@ -33,7 +29,6 @@ function Toast({ show, message, type = "info", onClose }) {
     </div>
   );
 }
-
 const toastFadeIn = `
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-16px);} to { opacity: 1; transform: none; } }
 .animate-fade-in { animation: fadeIn 0.3s; }
@@ -61,7 +56,6 @@ const campos = [
   'Entrega Final Ajustes',
   'Estado Fabrica'
 ];
-
 const initialForm = campos.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
 
 export default function LeaderPanel() {
@@ -101,7 +95,6 @@ export default function LeaderPanel() {
       showToast('Por favor, completa los campos requeridos.', 'error');
       return;
     }
-
     const successAudio = new Audio('/click.wav');
     successAudio.play();
 
@@ -115,6 +108,35 @@ export default function LeaderPanel() {
     setForm({ ...initialForm });
     setShowForm(false);
     fetchTareas();
+  };
+
+  // NUEVO: Manejar eliminación de tarea
+  const handleDelete = async (idxFiltrado) => {
+    // Encuentra el índice real de la tarea en el arreglo original (tareas)
+    const tareaFiltrada = tareasFiltradas[idxFiltrado];
+    const idxOriginal = tareas.findIndex(
+      t => campos.every(campo => t[campo] === tareaFiltrada[campo])
+    );
+    if (idxOriginal === -1) {
+      showToast("No se pudo encontrar la tarea en la base de datos.", "error");
+      return;
+    }
+    try {
+      const res = await fetch('/api/tareas', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index: idxOriginal }),
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast("Tarea eliminada correctamente", "success");
+        fetchTareas();
+      } else {
+        showToast(result.message || "Error al eliminar la tarea", "error");
+      }
+    } catch (err) {
+      showToast("Error al eliminar: " + err.message, "error");
+    }
   };
 
   const fetchTareas = async () => {
@@ -179,7 +201,7 @@ export default function LeaderPanel() {
           `}</style>
         </div>
       )}
-  
+
       {/* Formulario */}
       {showForm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-2">
@@ -220,7 +242,7 @@ export default function LeaderPanel() {
           </div>
         </div>
       )}
-  
+
       {/* Filtros */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6 mt-2 items-center w-full">
         <div className="flex items-center gap-2 w-full sm:max-w-none max-w-[350px]">
@@ -241,7 +263,7 @@ export default function LeaderPanel() {
             </div>
           </div>
         </div>
-  
+
         <div className="flex items-center gap-2 w-full sm:max-w-none max-w-[350px]">
           <label className="text-white text-xs sm:text-base">Programa:</label>
           <input
@@ -261,8 +283,8 @@ export default function LeaderPanel() {
           </button>
         </div>
       </div>
-  
-      {/* Tabla Cronograma registrado igual a tabla ejemplo con max-height 80vh y scroll */}
+
+      {/* Tabla Cronograma */}
       <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-xl p-4 sm:p-6 mb-6 max-w-full max-h-[80vh] overflow-auto">
         <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-white">
           Cronograma registrado
@@ -281,6 +303,9 @@ export default function LeaderPanel() {
                     {header}
                   </th>
                 ))}
+                <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">
+                  Acción
+                </th>
               </tr>
             </thead>
             <tbody className="bg-gray-900">
@@ -298,19 +323,23 @@ export default function LeaderPanel() {
                       {tarea[key]}
                     </td>
                   ))}
+                  <td className="px-4 py-3 border-b border-gray-800">
+                    <button
+                      onClick={() => handleDelete(idx)}
+                      className="bg-red-700 hover:bg-red-900 text-white px-3 py-1 rounded transition-colors duration-150 font-semibold text-xs"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
-  
+
       {/* Gráficos dinámicos con Chart.js */}
       <ChartsPanel data={tareas} />
     </div>
   );
-  
-
-
-      
 }

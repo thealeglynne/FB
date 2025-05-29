@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import LidFront from './lidFornt'
 import HaderOn from '../components/header/headerON'
+import MaainLider from '../components/mainLider/main'
 
 export default function LiderFront() {
   // 🚫 Protege contra salida con botón "atrás"
@@ -31,6 +32,7 @@ export default function LiderFront() {
 
       <div>
         <HaderOn />
+        <MaainLider />
        <LidFront />
       </div>
     </div>

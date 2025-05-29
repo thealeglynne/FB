@@ -1,0 +1,16 @@
+📝 Generando ENSAYO académico para:
+Materia/Tema:  Proceso de Selección de Proveedores
+Nivel: Pregrado por ciclos propedéuticos
+Modalidad: Presencial & Virtual
+Semestre: 4
+
+
+🔎 Consulta de búsqueda generada por el LLM:
+Aquí te dejo la búsqueda avanzada en Google para encontrar información académica profunda sobre el tema "Proceso de Selección de Proveedores" para el nivel "Pregrado por ciclos propedéuticos", modalidad "Presencial & Virtual", semestre 4:
+
+```
+site:edu OR site:ac.uk OR site:gov (("supplier selection process" OR "proveedor selection process" OR "vendor selection process") AND (logistics OR supply chain OR procurement OR sourcing) AND (academic OR research OR paper OR article OR thesis OR dissertation) AND (english OR español) AND (2015..2022))
+```
+
+Esta consulta utiliza operadores de búsqueda avanzados para filtrar resultados y enfocar la búsqueda en sitios educativos y gubernamentales, así como en documentos académicos y relevantes publicados en los últimos 7 años.
+No se encontraron snippets relevantes.
