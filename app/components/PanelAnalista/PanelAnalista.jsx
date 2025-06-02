@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 const nombreAnalista = "DAISSY YURANI ARDILA PRIETO";
 
 const BIN_ID_TAREAS = 'T683473998561e97a501bb4f1';
-const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
+const API_KEY = '$2a$10$CWeZ66JKpedXMgIy/CDyYeEoH18x8tgxZDNBGDeHRSAusOVtHrwce';
 
 const estadosActividad = ["Pendiente", "En progreso", "Terminado"];
 

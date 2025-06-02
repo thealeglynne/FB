@@ -1,7 +1,0 @@
-fastapi
-uvicorn
-langchain
-langchain-groq
-pydantic
-reportlab
-fpdf2

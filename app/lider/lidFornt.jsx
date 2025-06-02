@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import LiderChart from './chrtLider';
+import MaiLider from '../lider/page'
 
 // Configuración de bins y API
 const BIN_ID_CURSOS = '682f27e08960c979a59f5afe';

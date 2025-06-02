@@ -9,7 +9,7 @@ const USERS = [
 
 // Configuración JSONbin
 const BIN_ID = '683358498960c979a5a0fa92';
-const API_KEY = '$2a$10$TO5Moe9xid2H7DhOnwMqUuPkxgX0SZPQiQQ9f2BNiB5AFojjArd9e';
+const API_KEY = '$2a$10$CWeZ66JKpedXMgIy/CDyYeEoH18x8tgxZDNBGDeHRSAusOVtHrwce';
 
 export async function POST(req) {
   try {
