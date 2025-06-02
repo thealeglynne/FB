@@ -3,7 +3,8 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-export async function POST(req) {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+export async function POST(_) {
   return new Promise((resolve) => {
     const scriptPath = path.resolve(process.cwd(), 'scripts', 'ensamblador.py');
     exec(`python3 "${scriptPath}"`, { cwd: path.dirname(scriptPath) }, (error, stdout, stderr) => {
@@ -14,7 +15,7 @@ export async function POST(req) {
       try {
         const reportePath = path.join(path.dirname(scriptPath), 'ReporteFinal.txt');
         contenido = fs.readFileSync(reportePath, 'utf8');
-      } catch (e) {
+      } catch (_) {
         return resolve(NextResponse.json({ success: false, error: 'No se pudo leer el reporte generado.' }, { status: 500 }));
       }
       return resolve(NextResponse.json({ success: true, output: contenido }, { status: 200 }));
