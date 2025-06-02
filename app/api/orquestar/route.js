@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// Si quieres, deja la línea de eslint o bórrala, ya no importa aquí
 export async function POST(_) {
   return new Promise((resolve) => {
     const scriptPath = path.resolve(process.cwd(), 'scripts', 'ensamblador.py');
