@@ -5,6 +5,7 @@ import LiderPanelinfo from '../components/vistaPaneelLiderGerencia/infoDistribuc
 import HaderOn from '../components/header/headerON';
 import MainG from '../components/mainGerente/Main'
 
+
 export default function GerenciaPage() {
   // 🚫 Protección para evitar salir con botón "atrás"
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function GerenciaPage() {
       <div>
         <HaderOn />
         <MainG />
+
         <Leader />
         <LiderPanelinfo />
       </div>

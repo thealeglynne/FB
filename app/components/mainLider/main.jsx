@@ -39,7 +39,7 @@ export default function MainG() {
     <main
       className="relative w-full min-h-115 flex flex-col items-center justify-center px-6 py-12 gap-8 text-white"
       style={{
-        backgroundImage: "url('https://i.pinimg.com/originals/1a/b4/54/1ab4540492dd84656133461294b0cfe0.gif')",
+        backgroundImage: "url('https://i.pinimg.com/originals/61/21/be/6121be4e233e8b60d47f842d433c2fde.gif')",
         backgroundSize: '100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

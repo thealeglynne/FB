@@ -1,0 +1,91 @@
+--- Ejecutando AgenteQuizActividades ---
+AgenteQuizActividades: Generando contenido de actividades y quiz...
+**Evaluación y Actividades para la Unidad de COSTURA**
+
+**Bloque 1: Actividades de Aplicación**
+
+**Actividad 1: Diseño de un Proceso de Costura**
+
+Instrucciones: Diseña un proceso de costura para una prenda de ropa básica (camiseta, pantalón, etc.). Considera los conceptos clave de la unidad, como la elección de materiales, el uso de herramientas y máquinas de costura, y la planificación del proceso.
+
+Criterios de evaluación:
+
+* Claridad y coherencia en la descripción del proceso
+* Uso adecuado de conceptos clave de la unidad
+* Consideración de factores importantes en el proceso de costura (materiales, herramientas, planificación)
+
+**Actividad 2: Análisis de un Proceso de Costura**
+
+Instrucciones: Analiza un proceso de costura existente (en una imagen, video o en vivo) y evalúa su eficacia en términos de eficiencia, calidad y seguridad. Considera los conceptos clave de la unidad, como la elección de materiales, el uso de herramientas y máquinas de costura, y la planificación del proceso.
+
+Criterios de evaluación:
+
+* Claridad y coherencia en la descripción del proceso
+* Uso adecuado de conceptos clave de la unidad
+* Evaluación objetiva de la eficacia del proceso de costura
+
+**Bloque 2: Quiz de Repaso**
+
+**Pregunta 1**
+¿Cuál es el propósito principal de la costura?
+
+a) Confeccionar prendas de ropa
+b) Crear diseños innovadores
+c) Reparar prendas dañadas
+d) Desarrollar habilidades manuales
+
+Respuesta correcta: a) Confeccionar prendas de ropa
+
+Explicación: La costura es un proceso que implica la confección de prendas de ropa y otros objetos textiles.
+
+**Pregunta 2**
+¿Cuál es una de las partes fundamentales de una máquina de costura?
+
+a) Guía de hilos
+b) Tira hilos
+c) Motor eléctrico
+d) Medidor de aceite
+
+Respuesta correcta: a) Guía de hilos
+
+Explicación: La guía de hilos es una de las partes fundamentales de una máquina de costura, ya que permite la guía del hilo durante el proceso de costura.
+
+**Pregunta 3**
+¿Cómo se clasifican las máquinas de costura?
+
+a) Por su tamaño
+b) Por su función
+c) Por su tipo de hilo
+d) Por su precio
+
+Respuesta correcta: b) Por su función
+
+Explicación: Las máquinas de costura se clasifican según su función, como máquinas de coser, máquinas de bordar, etc.
+
+**Pregunta 4**
+¿Cuál es el objetivo principal de la planificación en el proceso de costura?
+
+a) Ahorrar tiempo
+b) Reducir costos
+c) Mejorar la calidad
+d) Incrementar la productividad
+
+Respuesta correcta: c) Mejorar la calidad
+
+Explicación: La planificación en el proceso de costura tiene como objetivo principal mejorar la calidad del producto final.
+
+**Bloque 3: Desafío Abierto**
+
+**Desafío: Diseño de un Proceso de Costura Sostenible**
+
+Instrucciones: Diseña un proceso de costura sostenible para una prenda de ropa básica (camiseta, pantalón, etc.). Considera los conceptos clave de la unidad, como la elección de materiales sostenibles, el uso de herramientas y máquinas de costura eficientes, y la planificación del proceso para minimizar residuos y reducir el impacto ambiental.
+
+Orientación:
+
+* Investiga sobre materiales sostenibles y su impacto en el medio ambiente
+* Analiza la eficiencia energética de las máquinas de costura y su impacto en el medio ambiente
+* Considera la minimización de residuos en el proceso de costura
+* Presenta un informe detallado del diseño del proceso de costura sostenible.
+
+Este desafío requiere la integración de varios conceptos clave de la unidad, como la elección de materiales, el uso de herramientas y máquinas de costura, y la planificación del proceso.
+--- AgenteQuizActividades finalizado ---
