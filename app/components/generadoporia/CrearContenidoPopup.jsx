@@ -12,7 +12,7 @@ export default function GenerarContenido({ onClose }) {
     try {
       const res = await fetch('/api/orquestar', { method: 'POST' });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Error desconocido');
+      if (data.error) throw new Error(data.error || 'Error desconocido');
       setReporte(data.output);
     } catch (err) {
       setError(err.message);

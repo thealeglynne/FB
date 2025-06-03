@@ -20,23 +20,39 @@ const colors = {
 };
 
 function formatNumber(n) {
-  return n.toLocaleString('es-CO', { maximumFractionDigits: 1 });
+  return n?.toLocaleString('es-CO', { maximumFractionDigits: 1 }) ?? '0';
 }
 
 export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = [] }) {
   // --- DATOS PARA DASHBOARD ---
   const totalMaterias = tareasEquipo.length;
   const estados = ["Pendiente", "En progreso", "Terminado"];
+
+  // --- BLOQUE ROBUSTO ---
   const actividadesPorEstado = estados.map(estado =>
     tareasEquipo.reduce((acc, t) =>
-      acc + t.Gránulos.reduce((sum, g) =>
-        sum + g.Actividades.filter(a => a.Estado === estado).length, 0), 0)
+      acc +
+      (Array.isArray(t.Gránulos)
+        ? t.Gránulos.reduce(
+            (sum, g) =>
+              sum +
+              (Array.isArray(g.Actividades)
+                ? g.Actividades.filter(a => a.Estado === estado).length
+                : 0),
+            0
+          )
+        : 0),
+      0
+    )
   );
+
   const totalActividades = actividadesPorEstado.reduce((a, b) => a + b, 0);
+
   const progresoPorc = totalActividades
     ? Math.round((actividadesPorEstado[2] / totalActividades) * 100)
     : 0;
 
+  // --- Barras: materias por analista ---
   const barData = {
     labels: analistasEquipo.map(a => a.nombreCompleto),
     datasets: [
@@ -54,7 +70,10 @@ export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = []
     ]
   };
 
-  const GRANULOS = tareasEquipo[0]?.Gránulos?.map(g => g.Nombre_Granulo) || [];
+  // --- Línea: avance por gránulo ---
+  const GRANULOS = Array.isArray(tareasEquipo[0]?.Gránulos)
+    ? tareasEquipo[0].Gránulos.map(g => g.Nombre_Granulo)
+    : [];
   const lineData = {
     labels: GRANULOS,
     datasets: [{
@@ -62,10 +81,12 @@ export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = []
       data: GRANULOS.map((nombre, i) => {
         let total = 0, terminadas = 0;
         tareasEquipo.forEach(t =>
+          Array.isArray(t.Gránulos) &&
           t.Gránulos.forEach((g, idx) => {
             if (g.Nombre_Granulo === nombre || idx === i) {
-              total += g.Actividades.length;
-              terminadas += g.Actividades.filter(a => a.Estado === "Terminado").length;
+              const acts = Array.isArray(g.Actividades) ? g.Actividades : [];
+              total += acts.length;
+              terminadas += acts.filter(a => a.Estado === "Terminado").length;
             }
           })
         );
@@ -83,6 +104,7 @@ export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = []
     }]
   };
 
+  // --- Donut: actividades por estado ---
   const doughnutData = {
     labels: estados,
     datasets: [{
@@ -109,10 +131,10 @@ export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = []
         className="w-full max-w-7xl mx-auto flex flex-col gap-1"
         style={{height: '100%', maxHeight: '100%'}}
       >
-        {/* CARDS: 3 en una fila */}
+        {/* CARDS */}
         <div className="grid grid-cols-3 gap-2 mb-1"
           style={{
-            height: '23%', // Cards ocupan 23% de altura total
+            height: '23%',
             minHeight: '65px',
             maxHeight: '90px',
           }}
@@ -148,7 +170,7 @@ export default function AnalyticsPanel({ tareasEquipo = [], analistasEquipo = []
           </div>
         </div>
 
-        {/* GRAFICAS: 3 en una fila, compactas */}
+        {/* GRAFICAS */}
         <div
           className="grid grid-cols-3 gap-2 items-end"
           style={{
