@@ -5,7 +5,6 @@ export async function POST() {
         'Content-Type': 'application/json',
       },
     });
-  
     const data = await backendRes.json();
     return new Response(JSON.stringify(data), {
       status: backendRes.status,
