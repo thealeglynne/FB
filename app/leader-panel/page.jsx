@@ -34,6 +34,7 @@ const toastFadeIn = `
 .animate-fade-in { animation: fadeIn 0.3s; }
 `;
 
+// Campos, SIN Entrega Contenidos, lo gestionamos aparte
 const campos = [
   'Escuela',
   'Nombre del Programa',
@@ -41,22 +42,14 @@ const campos = [
   'Trámite',
   'Modalidad',
   'Fecha de Radicación',
-  'Fecha de Visita de padres',
-  'Semestre',
-  '# Asignaturas',
-  'Entrega del plan de estudios a Fábrica de contenidos',
-  'Entrega del plan de Virtualización',
-  'Entrega Contenidos',
-  '1ra Entrega Virtualización',
-  'Estado 1ra entrega',
-  'Revisión Check List',
-  'Entrega Ajustes',
-  'Ejecución Ajustes',
-  'Ajustes Asesor',
-  'Entrega Final Ajustes',
-  'Estado Fabrica'
+  'Semestre'
 ];
+
 const initialForm = campos.reduce((acc, k) => ({ ...acc, [k]: '' }), {});
+
+// ---- NUEVO: Añadir EntregaContenidos como array al form
+initialForm['Entrega Contenidos'] = [];
+
 
 export default function LeaderPanel() {
   const [form, setForm] = useState({ ...initialForm });
@@ -65,11 +58,20 @@ export default function LeaderPanel() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
   const toastTimeout = useRef(null);
 
+  // NUEVO: cantidad y valores de contenidos
+  const [numContenidos, setNumContenidos] = useState(0);
+  const [contenidos, setContenidos] = useState([]);
+
+  // Para edición
+  const [editIndex, setEditIndex] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editForm, setEditForm] = useState({ ...initialForm });
+  const [editContenidos, setEditContenidos] = useState([]);
+
   const [filtroPrograma, setFiltroPrograma] = useState('');
   const [filtroEscuela, setFiltroEscuela] = useState('');
   const [filtroFecha, setFiltroFecha] = useState('');
 
-  // Estado para mostrar el modal de generación
   const [showGenerar, setShowGenerar] = useState(false);
 
   const showToast = (message, type = 'info') => {
@@ -81,36 +83,95 @@ export default function LeaderPanel() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  // Para edición:
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
 
-  const isFormValid = (data) => {
+  // Para gestionar los contenidos (crear)
+  const handleNumContenidosChange = (e) => {
+    const n = parseInt(e.target.value, 10) || 0;
+    setNumContenidos(n);
+    setContenidos(Array(n).fill(""));
+  };
+
+  const handleContenidoChange = (i, val) => {
+    const nuevos = [...contenidos];
+    nuevos[i] = val;
+    setContenidos(nuevos);
+  };
+
+  // Para edición
+  const handleEditContenidoChange = (i, val) => {
+    const nuevos = [...editContenidos];
+    nuevos[i] = val;
+    setEditContenidos(nuevos);
+  };
+
+  const isFormValid = (data, conts) => {
     return (
       data['Escuela'].trim() !== '' &&
       data['Nombre del Programa'].trim() !== '' &&
-      data['Semestre'].toString().trim() !== ''
+      data['Semestre'].toString().trim() !== '' &&
+      conts.length > 0 &&
+      conts.every((c) => c.trim() !== '')
     );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isFormValid(form)) {
+    if (!isFormValid(form, contenidos)) {
       const errorAudio = new Audio('/eliminar.wav');
       errorAudio.play();
-      showToast('Por favor, completa los campos requeridos.', 'error');
+      showToast('Por favor, completa todos los campos requeridos y los contenidos.', 'error');
       return;
     }
     const successAudio = new Audio('/click.wav');
     successAudio.play();
 
+    const toSend = { ...form, 'Entrega Contenidos': contenidos };
     const res = await fetch('/api/tareas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(toSend),
     });
     const result = await res.json();
     showToast(result.message, 'success');
     setForm({ ...initialForm });
+    setContenidos([]);
+    setNumContenidos(0);
     setShowForm(false);
     fetchTareas();
+  };
+
+  // Nuevo: Enviar edición (CORREGIDO)
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!isFormValid(editForm, editContenidos)) {
+      showToast('Por favor, completa los campos requeridos y los contenidos.', 'error');
+      return;
+    }
+    try {
+      // ¡¡Aquí va la estructura correcta!!
+      const res = await fetch('/api/tareas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          index: editIndex,
+          updatedData: { ...editForm, 'Entrega Contenidos': editContenidos }
+        }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showToast("Tarea editada correctamente", "success");
+        setShowEditForm(false);
+        fetchTareas();
+      } else {
+        showToast(result.message || "Error al editar la tarea", "error");
+      }
+    } catch (err) {
+      showToast("Error al editar: " + err.message, "error");
+    }
   };
 
   // Manejar eliminación de tarea
@@ -161,6 +222,18 @@ export default function LeaderPanel() {
 
   const escuelasUnicas = Array.from(new Set(tareas.map(t => t['Escuela'] || '').filter(Boolean)));
 
+  // Abrir editor
+  const handleOpenEdit = (idxFiltrado) => {
+    const tareaFiltrada = tareasFiltradas[idxFiltrado];
+    const idxOriginal = tareas.findIndex(
+      t => campos.every(campo => t[campo] === tareaFiltrada[campo])
+    );
+    setEditIndex(idxOriginal);
+    setEditForm({ ...tareas[idxOriginal] });
+    setEditContenidos(Array.isArray(tareas[idxOriginal]['Entrega Contenidos']) ? [...tareas[idxOriginal]['Entrega Contenidos']] : []);
+    setShowEditForm(true);
+  };
+
   return (
     <div className="px-2 py-4 sm:p-8 w-full space-y-8 sm:space-y-12 bg-black min-h-screen text-white">
       <style>{toastFadeIn}</style>
@@ -210,10 +283,9 @@ export default function LeaderPanel() {
         </div>
       )}
 
-{showGenerar && (
-  <GenerarContenido onClose={() => setShowGenerar(false)} />
-)}
-
+      {showGenerar && (
+        <GenerarContenido onClose={() => setShowGenerar(false)} />
+      )}
 
       {/* Formulario */}
       {showForm && (
@@ -245,11 +317,110 @@ export default function LeaderPanel() {
                   />
                 </div>
               ))}
+              {/* NUEVO: Cantidad de contenidos */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                <label className="block mb-1 font-medium text-gray-300 text-xs sm:text-sm">
+                  Cantidad de Contenidos
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={numContenidos || ''}
+                  onChange={handleNumContenidosChange}
+                  className="w-full border border-gray-700 p-2 rounded bg-black text-white text-xs sm:text-base"
+                  placeholder="Ejemplo: 5"
+                />
+              </div>
+              {Array.from({ length: numContenidos }).map((_, idx) => (
+                <div key={idx} className="col-span-1 sm:col-span-2 lg:col-span-3">
+                  <label className="block mb-1 font-medium text-gray-300 text-xs sm:text-sm">
+                    Contenido {idx + 1}
+                  </label>
+                  <input
+                    type="text"
+                    value={contenidos[idx] || ''}
+                    onChange={e => handleContenidoChange(idx, e.target.value)}
+                    className="w-full border border-gray-700 p-2 rounded bg-black text-white text-xs sm:text-base"
+                    placeholder={`Descripción del contenido ${idx + 1}`}
+                  />
+                </div>
+              ))}
               <button
                 type="submit"
                 className="col-span-1 sm:col-span-2 lg:col-span-3 bg-green-700 text-white py-2 rounded hover:bg-green-800 transition-colors duration-200 border border-gray-700 font-semibold"
               >
                 Registrar
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDICIÓN */}
+      {showEditForm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-2">
+          <div className="bg-gray-900 p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-[98vw] sm:w-[85vw] max-w-3xl sm:max-w-[1600px] relative">
+            <button
+              className="absolute top-2 right-2 text-gray-300 hover:text-red-500 text-2xl font-bold"
+              onClick={() => setShowEditForm(false)}
+              aria-label="Cerrar"
+              type="button"
+            >
+              ×
+            </button>
+            <form
+              onSubmit={handleEditSubmit}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[65vh] overflow-y-auto"
+            >
+              {campos.map(field => (
+                <div key={field} className="col-span-1">
+                  <label htmlFor={`edit-${field}`} className="block mb-1 font-medium text-gray-300 text-xs sm:text-sm">{field}</label>
+                  <input
+                    id={`edit-${field}`}
+                    name={field}
+                    value={editForm[field]}
+                    onChange={handleEditChange}
+                    className="w-full border border-gray-700 p-2 rounded bg-black text-white text-xs sm:text-base"
+                    placeholder={field}
+                    type={field.toLowerCase().includes('fecha') ? "date" : "text"}
+                  />
+                </div>
+              ))}
+              {/* NUEVO: Editar contenidos */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                <label className="block mb-1 font-medium text-gray-300 text-xs sm:text-sm">
+                  Contenidos ({editContenidos.length})
+                </label>
+                <button type="button"
+                  className="bg-blue-800 px-2 py-1 rounded text-xs mr-2"
+                  onClick={() => setEditContenidos([...editContenidos, ""])}
+                >Agregar contenido</button>
+                {editContenidos.length > 0 && (
+                  <button type="button"
+                    className="bg-red-800 px-2 py-1 rounded text-xs"
+                    onClick={() => setEditContenidos(editContenidos.slice(0, -1))}
+                  >Quitar último</button>
+                )}
+              </div>
+              {editContenidos.map((contenido, idx) => (
+                <div key={idx} className="col-span-1 sm:col-span-2 lg:col-span-3">
+                  <label className="block mb-1 font-medium text-gray-300 text-xs sm:text-sm">
+                    Contenido {idx + 1}
+                  </label>
+                  <input
+                    type="text"
+                    value={contenido}
+                    onChange={e => handleEditContenidoChange(idx, e.target.value)}
+                    className="w-full border border-gray-700 p-2 rounded bg-black text-white text-xs sm:text-base"
+                    placeholder={`Descripción del contenido ${idx + 1}`}
+                  />
+                </div>
+              ))}
+              <button
+                type="submit"
+                className="col-span-1 sm:col-span-2 lg:col-span-3 bg-blue-700 text-white py-2 rounded hover:bg-blue-800 transition-colors duration-200 border border-gray-700 font-semibold"
+              >
+                Guardar cambios
               </button>
             </form>
           </div>
@@ -317,6 +488,9 @@ export default function LeaderPanel() {
                   </th>
                 ))}
                 <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">
+                  Entrega Contenidos
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-gray-300 border-b border-gray-700 whitespace-nowrap">
                   Acción
                 </th>
               </tr>
@@ -336,7 +510,19 @@ export default function LeaderPanel() {
                       {tarea[key]}
                     </td>
                   ))}
-                  <td className="px-4 py-3 border-b border-gray-800">
+                  <td className="px-4 py-3 whitespace-pre-line border-b border-gray-800">
+                    {/* Entrega contenidos muestra lista */}
+                    {Array.isArray(tarea['Entrega Contenidos'])
+                      ? tarea['Entrega Contenidos'].map((c, i) => <div key={i}>• {c}</div>)
+                      : ""}
+                  </td>
+                  <td className="px-4 py-3 border-b border-gray-800 flex gap-1">
+                    <button
+                      onClick={() => handleOpenEdit(idx)}
+                      className="bg-blue-700 hover:bg-blue-900 text-white px-3 py-1 rounded transition-colors duration-150 font-semibold text-xs"
+                    >
+                      Editar
+                    </button>
                     <button
                       onClick={() => handleDelete(idx)}
                       className="bg-red-700 hover:bg-red-900 text-white px-3 py-1 rounded transition-colors duration-150 font-semibold text-xs"
